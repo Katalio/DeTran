@@ -1,0 +1,56 @@
+!_TAG_FILE_FORMAT	2	/extended format; --format=1 will not append ;" to lines/
+!_TAG_FILE_SORTED	1	/0=unsorted, 1=sorted, 2=foldcase/
+!_TAG_PROGRAM_AUTHOR	Darren Hiebert	/dhiebert@users.sourceforge.net/
+!_TAG_PROGRAM_NAME	Exuberant Ctags	//
+!_TAG_PROGRAM_URL	http://ctags.sourceforge.net	/official site/
+!_TAG_PROGRAM_VERSION	5.9~svn20110310	//
+BUFF_SIZE	./rain.c	16;"	d	file:
+BUFF_SIZE	./rtu.c	15;"	d	file:
+BUFF_SIZE	./serial_port/at_pdu.c	13;"	d	file:
+BUFF_SIZE	./serial_port/stty_echo.c	12;"	d	file:
+CLIENT	./rain.c	/^typedef enum {SERVER, CLIENT} ENDS_MODE;$/;"	e	enum:__anon2	file:
+CLIENT	./rtu.c	18;"	d	file:
+DEVICE	./rain.c	15;"	d	file:
+DEVICE	./rtu.c	14;"	d	file:
+ENDS_MODE	./rain.c	/^typedef enum {SERVER, CLIENT} ENDS_MODE;$/;"	t	typeref:enum:__anon2	file:
+FAILED	./rtu.c	/^	FAILED$/;"	e	enum:__anon4	file:
+MAX_CLIENT_NUM	./network/tcp/server.c	11;"	d	file:
+MAX_CLIENT_NUM	./rain.c	17;"	d	file:
+MAX_COMMAND	./network/tcp/client.c	11;"	d	file:
+PORT	./network/tcp/client.c	10;"	d	file:
+PORT	./network/tcp/server.c	10;"	d	file:
+PORT	./network/udp/recv.c	10;"	d	file:
+PORT	./network/udp/send.c	10;"	d	file:
+PORT	./rain.c	14;"	d	file:
+PORT	./rtu.c	13;"	d	file:
+SERVER	./rain.c	/^typedef enum {SERVER, CLIENT} ENDS_MODE;$/;"	e	enum:__anon2	file:
+SERVER	./rtu.c	17;"	d	file:
+STTY_DEV	./serial_port/at_pdu.c	12;"	d	file:
+STTY_DEV	./serial_port/stty_echo.c	11;"	d	file:
+SUCCESS	./rtu.c	/^	SUCCESS,$/;"	e	enum:__anon4	file:
+TCP	./rain.c	/^typedef enum {TCP, UDP} TRANS_MODE;$/;"	e	enum:__anon1	file:
+TCP_MODE	./rtu.c	/^	TCP_MODE,$/;"	e	enum:__anon3	file:
+TRANS_MODE	./rain.c	/^typedef enum {TCP, UDP} TRANS_MODE;$/;"	t	typeref:enum:__anon1	file:
+TRANS_MODE	./rtu.c	/^} TRANS_MODE;$/;"	t	typeref:enum:__anon3	file:
+TRANS_RESULT	./rtu.c	/^} TRANS_RESULT;$/;"	t	typeref:enum:__anon4	file:
+UDP	./rain.c	/^typedef enum {TCP, UDP} TRANS_MODE;$/;"	e	enum:__anon1	file:
+UDP_MODE	./rtu.c	/^	UDP_MODE$/;"	e	enum:__anon3	file:
+main	./network/tcp/client.c	/^int main()$/;"	f
+main	./network/tcp/server.c	/^int main()$/;"	f
+main	./network/udp/recv.c	/^int main()$/;"	f
+main	./network/udp/send.c	/^int main()$/;"	f
+main	./rain.c	/^int main(int argc, char *argv[])$/;"	f
+main	./rtu.c	/^int main()$/;"	f
+main	./serial_port/at_pdu.c	/^int main()$/;"	f
+main	./serial_port/stty_echo.c	/^int main()$/;"	f
+serial_handler	./rtu.c	/^int serial_handler(TRANS_MODE trans_mode)$/;"	f
+serial_port_init	./rain.c	/^int serial_port_init(void)$/;"	f
+setOption	./serial_port/at_pdu.c	/^int setOption(int fd)$/;"	f
+tcp_client_handler	./rain.c	/^void tcp_client_handler(void)$/;"	f
+tcp_server_handler	./rain.c	/^void tcp_server_handler(void)$/;"	f
+trans_data_with_tcp	./rain.c	/^void trans_data_with_tcp(ENDS_MODE ends_mode)$/;"	f
+trans_data_with_tcp	./rtu.c	/^TRANS_RESULT trans_data_with_tcp(int fd, char *data, int mode)$/;"	f
+trans_data_with_udp	./rain.c	/^void trans_data_with_udp(ENDS_MODE ends_mode)$/;"	f
+trans_data_with_udp	./rtu.c	/^TRANS_RESULT trans_data_with_udp(int fd, char *data, int mode)$/;"	f
+udp_client_handler	./rain.c	/^void udp_client_handler(void)$/;"	f
+udp_server_handler	./rain.c	/^void udp_server_handler(void)$/;"	f
