@@ -32,7 +32,7 @@ static int serial_port_init(void)
 	int fd;
 	struct termios tms;
 
-	fd = open(DEVICE, O_RDWR);
+	fd = open(DEVICE, O_RDWR | O_NOCTTY | O_NDELAY);
 	if(fd < 0) {
 		perror("Opne device fail!");
 		return -1;
@@ -44,8 +44,8 @@ static int serial_port_init(void)
 	tcflush(fd, TCIOFLUSH);
 
 	/* set baud rate */
-	cfsetispeed(&tms, B115200);
-	cfsetospeed(&tms, B115200);
+	cfsetispeed(&tms, B57600);
+	cfsetospeed(&tms, B57600);
 
 	/* set data bits */
 	tms.c_cflag &= ~CSIZE;
@@ -59,7 +59,7 @@ static int serial_port_init(void)
 	tms.c_cflag &= ~CSTOPB;
 
 	/* 设置为原始模式 */
-	tms.c_lflag &= ~(ECHO | ICANON | IEXTEN | ISIG);
+	tms.c_lflag &= ~(ECHO | ECHONL | ICANON | IEXTEN | ISIG);
 	tms.c_oflag &= ~OPOST;
 
 	if(tcsetattr(fd, TCSANOW, &tms) != 0) {
@@ -195,8 +195,8 @@ static int tcp_server_handler(void)
 				return -1;
 			}
 
-			write(fd, recvbuff, n);
 			printf("recv from TCP/UDP:%s\n", recvbuff);
+			write(fd, recvbuff, n);
 			printf("\n");
 		}
 	}
@@ -269,6 +269,7 @@ static int tcp_client_handler(void)
 				close(cltfd);
 				return -1;
 			}
+			printf("recv from TCP/UDP:%s\n", recvbuff);
 			write(fd, recvbuff, n);
 		}
 	
@@ -351,6 +352,7 @@ static int udp_server_handler(void)
 			}
 
 			recvbuff[n] = '\0';
+			printf("recv from TCP/UDP:%s\n", recvbuff);
 			write(fd, recvbuff, n);
 		}
 	
@@ -437,6 +439,7 @@ static int udp_client_handler(void)
 				close(cltfd);
 				return -1;
 			}
+			printf("recv from TCP/UDP:%s\n", recvbuff);
 			write(fd, recvbuff, n);
 		}
 	}

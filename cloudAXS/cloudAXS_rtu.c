@@ -50,15 +50,32 @@ void minimum_data(char *data)
 	strcat(main_buff, "12345678");
 	strcat(main_buff, quote);
 
-	printf("minimum data: %s\n", main_buff);
 	strncpy(data, main_buff, strlen(main_buff));
+}
+
+char *nvram_safe_get(char *data)
+{
+	char *buff;
+	static char value[32];
+
+	memset(value, 0, 32);
+	buff = nvram_get(data);
+
+	if((NULL == buff) || (strlen(buff) == 0))
+	{
+		strncpy(value, "None", strlen("None"));
+		return value;
+	}
+
+	strncpy(value, buff, strlen(buff));
+
+	return value;
 }
 
 int data_package(char *data)
 {
     char s[128] = {};
     time_t t;
-	int len = 0;
 
  	strncpy(main_buff, "i=>'", strlen("i=>'"));
  	strncpy(sysinfo_buff, "s=>'", strlen("s=>'"));
@@ -67,23 +84,39 @@ int data_package(char *data)
 
 	minimum_data(data);
 	
-	printf("data in main buff: %s\n", data);
-	strcat(sysinfo_buff, "router_name");	
+	strcat(sysinfo_buff, nvram_safe_get("router_name"));	
 	strcat(sysinfo_buff, comma);
-	strcat(sysinfo_buff, "router_hw");	
+	strcat(sysinfo_buff, nvram_safe_get("router_hw"));	
 	strcat(sysinfo_buff, comma);
 	strncpy(s, "router_", strlen("router_"));
-	strcat(s, "os_version");	
+	strcat(s, nvram_safe_get("os_version"));	
 	strcat(sysinfo_buff, s);	
 	memset(s, 0, 128);
 	strcat(sysinfo_buff, comma);
 
-//	printf("ready for getting router time\n");
-//    t = time(NULL);
-//    strftime(s, sizeof(s), "%a, %d %b %Y %H:%M:%S %z", localtime(&t));
+	/* router time */
+	t = time(NULL);
+ 	strftime(s, sizeof(s), "%a,%d %b %Y %H:%M:%S %z", localtime(&t));
+	strcat(sysinfo_buff, s);	
+	strcat(sysinfo_buff, comma);
+	memset(s, 0, 128);
+	/* uptime */
+//	struct sysinfo si;
+//	sysinfo(&si);
+//	reltime(s, si.uptime);
 //	strcat(sysinfo_buff, s);	
 //	strcat(sysinfo_buff, comma);
 //	memset(s, 0, 128);
+	/* total/free memory */
+//	meminfo_t mem;
+//	get_memory(&mem);
+//	mem.total;
+//	mem.free;
+//	sprintf(s, "%s/%s", mem.total, mem.free);
+//	strcat(sysinfo_buff, s);	
+//	strcat(sysinfo_buff, comma);
+//	memset(s, 0, 128);
+	
 	strcat(sysinfo_buff, quote);
 	if(sysinfo_buff[strlen(sysinfo_buff) -2] == comma[0])
 	{
@@ -92,32 +125,59 @@ int data_package(char *data)
 	}
 
 	//network information
-	strcat(netinfo_buff, "wan_iface");	
+	strcat(netinfo_buff, nvram_safe_get("wan_iface"));	
 	strcat(netinfo_buff, comma);
-	strcat(netinfo_buff, "wan_hwaddr");	
+	strcat(netinfo_buff, nvram_safe_get("wan_hwaddr"));	
 	strcat(netinfo_buff, comma);
-	strcat(netinfo_buff, "modem_type");	
+	strcat(netinfo_buff, nvram_safe_get("modem_type"));	
 	strcat(netinfo_buff, comma);
-	strcat(netinfo_buff, "modem_state");	
+	strcat(netinfo_buff, nvram_safe_get("modem_state"));	
 	strcat(netinfo_buff, comma);
-	strcat(netinfo_buff, "sim_selected");	
+	strcat(netinfo_buff, nvram_safe_get("sim_selected"));	
 	strcat(netinfo_buff, comma);
-	strcat(netinfo_buff, "cops");	
+	strcat(netinfo_buff, nvram_safe_get("cops"));	
 	strcat(netinfo_buff, comma);
-	strcat(netinfo_buff, "cell_network");	
+	strcat(netinfo_buff, nvram_safe_get("cell_network"));	
 	strcat(netinfo_buff, comma);
-	strcat(netinfo_buff, "sim_state");	
+	strcat(netinfo_buff, nvram_safe_get("sim_state"));	
 	strcat(netinfo_buff, comma);
-	strcat(netinfo_buff, "csq");	
+	strcat(netinfo_buff, nvram_safe_get("csq"));	
 	strcat(netinfo_buff, comma);
-	strcat(netinfo_buff, "wanip");	
+	strcat(netinfo_buff, nvram_safe_get("wanip"));	
 	strcat(netinfo_buff, comma);
-	strcat(netinfo_buff, "wannetmask");	
+	strcat(netinfo_buff, nvram_safe_get("wannetmask"));	
 	strcat(netinfo_buff, comma);
-	strcat(netinfo_buff, "wangateway");	
+	strcat(netinfo_buff, nvram_safe_get("wangateway"));	
 	strcat(netinfo_buff, comma);
-	strcat(netinfo_buff, "wanstatus");	
+	/* DNS */
+//	int i;
+//	const dns_list_t *dns;
+//	dns = get_dns();        // static buffer
+//	for (i = 0 ; i < dns->count; ++i) 
+//	{
+//		sprintf(s + strlen(s), "%s'%s:%u'", i ? "," : "", inet_ntoa(dns->dns[i].addr), dns->dns[i].port);
+//	}
+//	strcat(netinfo_buff, s);	
+//	strcat(netinfo_buff, comma);
+//	memset(s, 0, 128);
+
+	strcat(netinfo_buff, nvram_safe_get("wanstatus"));	
 	strcat(netinfo_buff, comma);
+	/* connection uptime */
+//	struct sysinfo si;
+//	long uptime;
+//	
+//	s[0] = '-';
+//	s[1] = 0;
+//	sysinfo(&si);
+//	if(f_read("/var/lib/misc/wantime", &uptime, sizeof(uptime)) == sizeof(uptime))
+//	{
+//		reltime(s, si.uptime - uptime);
+//	}
+//	strcat(netinfo_buff, s);	
+//	strcat(netinfo_buff, comma);
+//	memset(s, 0, 128);
+
 	strcat(netinfo_buff, quote);
 	if(netinfo_buff[strlen(netinfo_buff) -2] == comma[0])
 	{
@@ -126,13 +186,13 @@ int data_package(char *data)
 	}
 
 	//data usage 
-	strcat(data_usage_buff, "active lan");	
+	strcat(data_usage_buff, nvram_safe_get("active lan"));	
 	strcat(data_usage_buff, comma);
-	strcat(data_usage_buff, "wl_radio");	
+	strcat(data_usage_buff, nvram_safe_get("wl_radio"));	
 	strcat(data_usage_buff, comma);
-	strcat(data_usage_buff, "data send");	
+	strcat(data_usage_buff, nvram_safe_get("data_send"));	
 	strcat(data_usage_buff, comma);
-	strcat(data_usage_buff, "data received");	
+	strcat(data_usage_buff, nvram_safe_get("data_received"));	
 	strcat(data_usage_buff, quote);
 	if(data_usage_buff[strlen(data_usage_buff) -2] == comma)
 	{
@@ -159,19 +219,54 @@ int data_package(char *data)
  	strncpy(netinfo_buff, "n=>'", strlen("n=>'"));
  	strncpy(data_usage_buff, "d=>'", strlen("d=>'"));
 
-	printf("data after package: %s\n", data);
 	return 0;
 }
 
-int send_to_server(int sockfd, char *senddata)
+int send_data_to_server(int sockfd)
 {
 	int n = 0;
-	n = send(sockfd, senddata, strlen(senddata), 0); if(n < 0) {
-//		syslog(LOG_ERR, "Send to Server Error!!!");
-		return -1;
+	char sendbuff[BUFF_SIZE];
+
+	while(1)
+	{
+		sleep(10);		//数据上报时间间隔
+		memset(sendbuff, 0, BUFF_SIZE);
+		if(data_package(sendbuff) != 0)
+		{
+//			syslog(LOG_ERR, "Package Data Error!!!");
+			return -1;
+		}
+		n = send(sockfd, sendbuff, strlen(sendbuff), 0); 
+		if(n < 0) {
+//			syslog(LOG_ERR, "Send to Server Error!!!");
+			return -1;
+		}
+
+		printf("send to server: %s\n", sendbuff);
 	}
 
-	printf("send to server: %s\n", senddata);
+	return 0;
+}
+
+int send_heartbeat_to_server(int sockfd)
+{
+	int n = 0;
+	char sendbuff[BUFF_SIZE];
+
+	while(1)
+	{
+		sleep(5);		//心跳包发送时间间隔
+		memset(sendbuff, 0, BUFF_SIZE);
+		strncpy(sendbuff, "Heartbeat data: online", strlen("Heartbeat data: online"));
+		n = send(sockfd, sendbuff, strlen(sendbuff), 0); 
+		if(n < 0) {
+//			syslog(LOG_ERR, "Send to Server Error!!!");
+			return -1;
+		}
+	
+		printf("send to server: %s\n", sendbuff);
+	}
+
 	return 0;
 }
 
@@ -293,19 +388,11 @@ void analysis_data(char *data)
 int main()
 {
 	int sockfd = 0;
-	char sendbuff[BUFF_SIZE];
 	char recvbuff[BUFF_SIZE];
 	int len = 0;
-	struct timeval tv;
-	time_t t;
-	struct tm *p;
-	int report_intval = 0;
-	unsigned int now = 0, last = 0;		//当前系统时间变量
-	int n = 0;
-
-//	tv.tv_sec = nvram_get_int("heartbeat_intval");	//心跳包发送间隔时间
-	tv.tv_sec = 5;	//心跳包发送间隔时间
-	tv.tv_usec = 0;
+	int n = 0, ret = 0;;
+	pthread_t data_pid = 0;
+	pthread_t hb_pid = 0;
 
 	sockfd = connect_to_cloudAXS_server(dest_ip, port);
 	if(sockfd < 0) 
@@ -314,82 +401,45 @@ int main()
 		return -1;
 	}
 
-	fd_set rfds, wfds;
+	ret = pthread_create(&data_pid, NULL, send_data_to_server, sockfd);	//线程1, 发送数据
+	if(ret < 0)
+	{
+		perror("create data pid failed");
+		return -1;
+	}
+	ret = pthread_create(&hb_pid, NULL, send_heartbeat_to_server, sockfd);	//线程2, 发送心跳包
+	if(ret < 0)
+	{
+		perror("create data pid failed");
+		return -1;
+	}
+
+	fd_set rfds;
 
 	while(1)
 	{
 		FD_ZERO(&rfds);
 		FD_SET(0, &rfds);
 		FD_SET(sockfd, &rfds);
-		wfds = rfds;
 
-		n = select(sockfd + 1, &rfds, &wfds, NULL, &tv);
+		n = select(sockfd + 1, &rfds, NULL, NULL, NULL);
 		if(n < 0) 
 		{
 		//	syslog(LOG_ERR, "select() Error!!!");
 			return -1;
 		}
-		else if(n == 0)	//超过设置心跳时间没数据通讯, 发送心跳包 
+
+		if(FD_ISSET(sockfd, &rfds))
 		{
-			printf("send heart data\n");
-			if(send_to_server(sockfd, "online") < 0)
+			memset(recvbuff, 0, BUFF_SIZE);
+			if(NULL == recv_from_server(sockfd, recvbuff, &len))
 			{
-		//		syslog(LOG_ERR, "Send Heartbeat Intval Error!!!");
+		//		syslog(LOG_ERR, "Receive Data Error!!!");
 				return -1;
 			}
-		}
-		else
-		{
-			//获取当前时间,用于计算上报时间间隔
-			time(&t);
-			p = localtime(&t);
-			now = p->tm_hour * 60 * 60 + p->tm_min * 60 + p->tm_sec;
-			if(now < last)
-			{
-				last -= 86400;	
-				report_intval = (last + now) / 60;
-			}
-			else
-			{
-			//	report_intval = (now - last) / 60;	//以分钟计数
-				report_intval = now - last;	//以秒计数
-			}
+			printf("receive data success\n");
 
-			if(report_intval >= 10)	//上报时间间隔
-			{
-				if(FD_ISSET(sockfd, &wfds))
-				{
-					memset(sendbuff, 0, BUFF_SIZE);
-					if(data_package(sendbuff) != 0)
-					{
-		//				syslog(LOG_ERR, "Package Data Error!!!");
-						return -1;
-					}
-	
-					if(send_to_server(sockfd, sendbuff) < 0)
-					{
-		//				syslog(LOG_ERR, "Send Data Error!!!");
-						return -1;
-					}
-					//记下当前发送完成时间
-					time(&t);
-					p = localtime(&t);
-					last = p->tm_hour * 60 * 60 + p->tm_min * 60 + p->tm_sec;
-				}
-			}
-
-			if(FD_ISSET(sockfd, &rfds))
-			{
-				memset(recvbuff, 0, BUFF_SIZE);
-				if(NULL == recv_from_server(sockfd, recvbuff, &len))
-				{
-		//			syslog(LOG_ERR, "Receive Data Error!!!");
-					return -1;
-				}
-				printf("receive data success\n");
-
-				analysis_data(recvbuff);
-			}
+			analysis_data(recvbuff);
 		}
 	}
 
@@ -397,6 +447,4 @@ int main()
 
 	return 0;
 }
-
-
 
