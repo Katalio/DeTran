@@ -230,8 +230,8 @@ static int tcp_client_handler(void)
 	bzero(&svr, sizeof(svr));		//initialize memory of the struct
 	svr.sin_family = AF_INET;
 	svr.sin_port = htons(PORT);
-//	svr.sin_addr.s_addr = htonl(INADDR_ANY);
-	svr.sin_addr.s_addr = inet_addr("192.168.1.8");
+	svr.sin_addr.s_addr = htonl(INADDR_ANY);
+//	svr.sin_addr.s_addr = inet_addr("192.168.1.8");
 	bzero(&(svr.sin_zero), 8);
 
 	len = sizeof(svr);	
