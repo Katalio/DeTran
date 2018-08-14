@@ -295,12 +295,26 @@ static int recv_ack(int fd)
 	int n = 0;
 	unsigned char cmd;
 	unsigned char buff[BUFF_SIZE];
+	fd_set rfds;
 
-	n = read(fd, buff, BUFF_SIZE);
-	if (n < 0)
+	FD_ZERO(&rfds);
+	FD_SET(0, &rfds);
+	FD_SET(fd, &rfds);
+
+	if(select(fd + 1, &rfds, NULL, NULL, NULL) < 0)
 	{
-		perror("Read ack msg fail");
+		perror("Select error");
 		return -1;
+	}
+
+	if(FD_ISSET(fd, &rfds))
+	{
+		n = read(fd, buff, BUFF_SIZE);
+		if (n < 0)
+		{
+			perror("Read ack msg fail");
+			return -1;
+		}
 	}
 
 	cmd = buff[1];
@@ -366,11 +380,11 @@ static int tcp_client_handler(void)
 	int fd = serial_port_init();
 
 	send_cmd(fd, SET_PARAMS);	//设置参数
-//	if(recv_ack(fd) < 0)
-//	{
-//		perror("Set Lora parameters failed");
-//		return -1;
-//	}
+	if(recv_ack(fd) < 0)
+	{
+		perror("Set Lora parameters failed");
+		return -1;
+	}
 	printf("Set Lora parameters successfully\n");
 
 	send_cmd(fd, RESET);	//重启
@@ -463,15 +477,16 @@ static int udp_client_handler(void)
 	fd_set rfds;
 	
 	send_cmd(fd, SET_PARAMS);	//设置参数
-//	if(recv_ack(fd) < 0)
-//	{
-//		perror("Set Lora parameters failed");
-//		return -1;
-//	}
+	if(recv_ack(fd) < 0)
+	{
+		perror("Set Lora parameters failed");
+		return -1;
+	}
 	printf("Set Lora parameters successfully\n");
 
 	send_cmd(fd, RESET);	//重启
 
+//	sendto(cltfd, "hello", 5, 0, (struct sockaddr *) &mm, len);
 	while(1) {
 		FD_ZERO(&rfds);
 		FD_SET(0, &rfds);

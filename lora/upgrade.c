@@ -63,7 +63,7 @@ static char *package_data(unsigned char *in, unsigned char *out, int len)
 
 	memcpy(out + 2, &length, 2);	//数据总长
 	memcpy(out + 12, &len, 2);		//读取长度
-	memcpy(out + 14, in, len);		
+	memcpy(out + 14, in, len);		//in为二进制数据，不能使用strncpy!!!	
 	for(i = 0; i < length - 2; i ++)
 	{
 		filesum += *(out + i);
