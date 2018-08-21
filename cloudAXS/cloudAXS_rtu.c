@@ -408,15 +408,25 @@ void analysis_data(char *data)
 	}
 	else if(data[4] == '1')
 	{
+//		syslog(LOG_ERR, "Account ID or IMEI Number is blank on cloudAXS server");
+		printf("Account ID or IMEI Number is blank on cloudAXS server\n");
+	}
+	else if(data[4] == '2')
+	{
 //		syslog(LOG_ERR, "Unknown Account ID on cloudAXS server");
 		printf("Unknown Account ID on cloudAXS server\n");
 	}
-	else if(data[4] == '2')
+	else if(data[4] == '3')
 	{
 //		syslog(LOG_ERR, "Unknown IMEI Number on cloudAXS server");
 		printf("Unknown IMEI Number on cloudAXS server\n");
 	}
-	else if(data[4] == '3')
+	else if(data[4] == '4')
+	{
+//		syslog(LOG_ERR, "IMEI Number not registered with Account ID");
+		printf("IMEI Number not registered with Account ID\n");
+	}
+	else if(data[4] == '5')
 	{
 		printf("Reboot router asap\n");
 //		reboot_router();	//待完成
