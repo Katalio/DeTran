@@ -9,14 +9,14 @@ char comma[] = ",";
 char quote[] = "'";
 static int rate = 0;
 
-void get_router_time(char *s);
-void get_uptime(char *s);
-void get_memory(char *s);
-void get_dns_info(char *s);
-void get_connection_uptime(char *s);
-void compare_with_comma(char *buf);
+static void get_router_time(char *s);
+static void get_uptime(char *s);
+static void get_memory(char *s);
+static void get_dns_info(char *s);
+static void get_connection_uptime(char *s);
+static void compare_with_comma(char *buf);
 
-int connect_to_cloudAXS_server(const char *svr_ip, unsigned long svr_port)
+static int connect_to_cloudAXS_server(const char *svr_ip, unsigned long svr_port)
 {
 	struct sockaddr_in serveraddr;
 	int sockfd;
@@ -45,7 +45,7 @@ int connect_to_cloudAXS_server(const char *svr_ip, unsigned long svr_port)
 	return sockfd;
 }
 
-void get_router_time(char *s)
+static void get_router_time(char *s)
 {
     time_t t;
 
@@ -96,7 +96,7 @@ void get_connection_uptime(char *s)
 }
 #endif
 
-void compare_with_comma(char *buf)
+static void compare_with_comma(char *buf)
 {
 	int len = strlen(buf);
 
@@ -109,7 +109,7 @@ void compare_with_comma(char *buf)
 	}while (buf[len-2] == comma[0]);
 }
 
-void minimum_data(char *data)
+static void minimum_data(char *data)
 {
 	char main_buff[BUFF_SIZE] = {0};
  	strncpy(main_buff, "i=>'", strlen("i=>'"));
@@ -122,7 +122,7 @@ void minimum_data(char *data)
 	strncpy(data, main_buff, strlen(main_buff));
 }
 
-int data_package(char *data)
+static int data_package(char *data)
 {
 	char sysinfo_buff[BUFF_SIZE] = {0};
 	char netinfo_buff[BUFF_SIZE] = {0};
@@ -236,7 +236,7 @@ int data_package(char *data)
 	return 0;
 }
 
-void *send_data_to_server(void *sockfd)
+static void *send_data_to_server(void *sockfd)
 {
 	int n = 0;
 	char sendbuff[BUFF_SIZE];
@@ -262,7 +262,7 @@ void *send_data_to_server(void *sockfd)
 //	return 0;
 }
 
-void *send_heartbeat_to_server(void *sockfd)
+static void *send_heartbeat_to_server(void *sockfd)
 {
 	int n = 0;
 	char sendbuff[BUFF_SIZE];
@@ -284,7 +284,7 @@ void *send_heartbeat_to_server(void *sockfd)
 //	return 0;
 }
 
-char *recv_data_from_server(int sockfd, char *recvdata, int *len)
+static char *recv_data_from_server(int sockfd, char *recvdata, int *len)
 {
 	int n = 0;
 
@@ -298,7 +298,7 @@ char *recv_data_from_server(int sockfd, char *recvdata, int *len)
 	return recvdata;
 }
 
-void analysis_data(char *data)
+static void analysis_data(char *data)
 {
 	char s[5] = {};
 	int i, j;

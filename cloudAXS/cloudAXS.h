@@ -54,12 +54,12 @@ typedef struct {
 	} dns[6];
 } dns_list_t;
 
-void minimum_data(char *data);
-int connect_to_cloudAXS_server(const char *svr_ip, unsigned long svr_port);
-int data_package(char *data);
-void *send_data_to_server(void *sockfd);
-void *send_heartbeat_to_server(void *sockfd);
-char *recv_data_from_server(int sockfd, char *recvdata, int *len);
-void analysis_data(char *data);
+static void minimum_data(char *data);
+static int connect_to_cloudAXS_server(const char *svr_ip, unsigned long svr_port);
+static int data_package(char *data);
+static void *send_data_to_server(void *sockfd);
+static void *send_heartbeat_to_server(void *sockfd);
+static char *recv_data_from_server(int sockfd, char *recvdata, int *len);
+static void analysis_data(char *data);
 
 #endif //end __CLOUDAXS_H__
