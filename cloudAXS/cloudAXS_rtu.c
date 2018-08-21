@@ -10,11 +10,12 @@ char comma[] = ",";
 char quote[] = "'";
 static int rate = 0;
 
-static void get_router_time(char *s);
-static void get_uptime(char *s);
-static void get_memory(char *s);
-static void get_dns_info(char *s);
-static void get_connection_uptime(char *s);
+void get_router_time(char *s);
+void get_uptime(char *s);
+void get_memory(char *s);
+void get_dns_info(char *s);
+void get_connection_uptime(char *s);
+char *nvram_safe_get(char *data)
 static void compare_with_comma(char *buf);
 
 static int connect_to_cloudAXS_server(const char *svr_ip, unsigned long svr_port)
@@ -60,7 +61,7 @@ static void minimum_data(char *data)
 	strncpy(data, main_buff, strlen(main_buff));
 }
 
-static char *nvram_safe_get(char *data)
+char *nvram_safe_get(char *data)
 {
 	char *buff;
 	static char value[32];
@@ -79,7 +80,7 @@ static char *nvram_safe_get(char *data)
 	return value;
 }
 
-static void get_router_time(char *s)
+void get_router_time(char *s)
 {
     time_t t;
 
@@ -88,14 +89,14 @@ static void get_router_time(char *s)
 }
 
 #if 0
-static void get_uptime(char *s)
+void get_uptime(char *s)
 {
 	struct sysinfo si;
 	sysinfo(&si);
 	reltime(s, si.uptime);
 }
 
-static void get_memory(char *s)
+void get_memory(char *s)
 {
 	meminfo_t mem;
 	get_memory(&mem);
@@ -104,7 +105,7 @@ static void get_memory(char *s)
 	sprintf(s, "%s/%s", mem.total, mem.free);
 }
 
-static void get_dns_info(char *s)
+void get_dns_info(char *s)
 {
 	int i;
 	const dns_list_t *dns;
@@ -115,7 +116,7 @@ static void get_dns_info(char *s)
 	}
 }
 
-static void get_connection_uptime(char *s)
+void get_connection_uptime(char *s)
 {
 	struct sysinfo si;
 	long uptime;
@@ -264,7 +265,7 @@ static int data_package(char *data)
 	return 0;
 }
 
-static void *send_data_to_server(void *sockfd)
+void *send_data_to_server(void *sockfd)
 {
 	int n = 0;
 	char sendbuff[BUFF_SIZE];
@@ -290,7 +291,7 @@ static void *send_data_to_server(void *sockfd)
 //	return 0;
 }
 
-static void *send_heartbeat_to_server(void *sockfd)
+void *send_heartbeat_to_server(void *sockfd)
 {
 	int n = 0;
 	char sendbuff[BUFF_SIZE];

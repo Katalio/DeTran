@@ -9,11 +9,11 @@ char comma[] = ",";
 char quote[] = "'";
 static int rate = 0;
 
-static void get_router_time(char *s);
-static void get_uptime(char *s);
-static void get_memory(char *s);
-static void get_dns_info(char *s);
-static void get_connection_uptime(char *s);
+void get_router_time(char *s);
+void get_uptime(char *s);
+void get_memory(char *s);
+void get_dns_info(char *s);
+void get_connection_uptime(char *s);
 static void compare_with_comma(char *buf);
 
 static int connect_to_cloudAXS_server(const char *svr_ip, unsigned long svr_port)
@@ -45,7 +45,7 @@ static int connect_to_cloudAXS_server(const char *svr_ip, unsigned long svr_port
 	return sockfd;
 }
 
-static void get_router_time(char *s)
+void get_router_time(char *s)
 {
     time_t t;
 
@@ -236,7 +236,7 @@ static int data_package(char *data)
 	return 0;
 }
 
-static void *send_data_to_server(void *sockfd)
+void *send_data_to_server(void *sockfd)
 {
 	int n = 0;
 	char sendbuff[BUFF_SIZE];
@@ -262,7 +262,7 @@ static void *send_data_to_server(void *sockfd)
 //	return 0;
 }
 
-static void *send_heartbeat_to_server(void *sockfd)
+void *send_heartbeat_to_server(void *sockfd)
 {
 	int n = 0;
 	char sendbuff[BUFF_SIZE];
