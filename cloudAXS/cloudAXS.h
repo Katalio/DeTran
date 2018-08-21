@@ -26,6 +26,7 @@
 #include	<errno.h>    
 #include	<pthread.h>
 #include 	<stdarg.h>
+#include 	<syslog.h>
 
 #include <sys/reboot.h>
 #include <stdint.h>
@@ -56,8 +57,8 @@ typedef struct {
 void minimum_data(char *data);
 int connect_to_cloudAXS_server(const char *svr_ip, unsigned long svr_port);
 int data_package(char *data);
-int send_data_to_server(int sockfd);
-int send_heartbeat_to_server(int sockfd);
+void *send_data_to_server(void *sockfd);
+void *send_heartbeat_to_server(void *sockfd);
 char *recv_data_from_server(int sockfd, char *recvdata, int *len);
 void analysis_data(char *data);
 

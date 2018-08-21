@@ -2,15 +2,19 @@
 
 #define PORT 51061
 #define BUFF_SIZE 1024
+#define TMP_LEN 128 
 
 const char dest_ip[16] = "89.151.126.222";
-char main_buff[BUFF_SIZE];
-char sysinfo_buff[BUFF_SIZE];
-char netinfo_buff[BUFF_SIZE];
-char data_usage_buff[BUFF_SIZE];
 char comma[] = ",";
 char quote[] = "'";
 static int rate = 0;
+
+void get_router_time(char *s);
+void get_uptime(char *s);
+void get_memory(char *s);
+void get_dns_info(char *s);
+void get_connection_uptime(char *s);
+void compare_with_comma(char *buf);
 
 int connect_to_cloudAXS_server(const char *svr_ip, unsigned long svr_port)
 {
@@ -41,9 +45,75 @@ int connect_to_cloudAXS_server(const char *svr_ip, unsigned long svr_port)
 	return sockfd;
 }
 
+void get_router_time(char *s)
+{
+    time_t t;
+
+	t = time(NULL);
+ 	strftime(s, TMP_LEN, "%a,%d %b %Y %H:%M:%S %z", localtime(&t));
+}
+
+#if 0
+void get_uptime(char *s)
+{
+	struct sysinfo si;
+	sysinfo(&si);
+	reltime(s, si.uptime);
+}
+
+void get_memory(char *s)
+{
+	meminfo_t mem;
+	get_memory(&mem);
+	mem.total;
+	mem.free;
+	sprintf(s, "%s/%s", mem.total, mem.free);
+}
+
+void get_dns_info(char *s)
+{
+	int i;
+	const dns_list_t *dns;
+	dns = get_dns();        // static buffer
+	for (i = 0 ; i < dns->count; ++i) 
+	{
+		sprintf(s + strlen(s), "%s'%s:%u'", i ? "," : "", inet_ntoa(dns->dns[i].addr), dns->dns[i].port);
+	}
+}
+
+void get_connection_uptime(char *s)
+{
+	struct sysinfo si;
+	long uptime;
+	
+	s[0] = '-';
+	s[1] = 0;
+	sysinfo(&si);
+	if(f_read("/var/lib/misc/wantime", &uptime, sizeof(uptime)) == sizeof(uptime))
+	{
+		reltime(s, si.uptime - uptime);
+	}
+}
+#endif
+
+void compare_with_comma(char *buf)
+{
+	int len = strlen(buf);
+
+	do
+	{
+		buf[len -2] = buf[len - 1];
+		buf[len -1] = 0;
+
+		len -= 1;
+	}while (buf[len-2] == comma[0]);
+}
+
 void minimum_data(char *data)
 {
+	char main_buff[BUFF_SIZE] = {0};
  	strncpy(main_buff, "i=>'", strlen("i=>'"));
+
 	strcat(main_buff, "867377020199547");		
 	strcat(main_buff, comma);
 	strcat(main_buff, "12345678");
@@ -54,10 +124,12 @@ void minimum_data(char *data)
 
 int data_package(char *data)
 {
-    char s[128] = {};
+	char sysinfo_buff[BUFF_SIZE] = {0};
+	char netinfo_buff[BUFF_SIZE] = {0};
+	char data_usage_buff[BUFF_SIZE] = {0};
+    char s[TMP_LEN] = {0};
     time_t t;
 
- 	strncpy(main_buff, "i=>'", strlen("i=>'"));
  	strncpy(sysinfo_buff, "s=>'", strlen("s=>'"));
  	strncpy(netinfo_buff, "n=>'", strlen("n=>'"));
  	strncpy(data_usage_buff, "d=>'", strlen("d=>'"));
@@ -71,37 +143,30 @@ int data_package(char *data)
 	strncpy(s, "router_", strlen("router_"));
 	strcat(s, "os_version");	
 	strcat(sysinfo_buff, s);	
-	memset(s, 0, 128);
+	memset(s, 0, TMP_LEN);
 	strcat(sysinfo_buff, comma);
 
-    t = time(NULL);
-    strftime(s, sizeof(s), "%a, %d %b %Y %H:%M:%S %z", localtime(&t));
+	/* router time */
+//	t = time(NULL);
+// 	strftime(s, sizeof(s), "%a,%d %b %Y %H:%M:%S %z", localtime(&t));
+	get_router_time(s);
 	strcat(sysinfo_buff, s);	
 	strcat(sysinfo_buff, comma);
-	memset(s, 0, 128);
-	/* uptime */
-//	struct sysinfo si;
-//	sysinfo(&si);
-//	reltime(s, si.uptime);
-//	strcat(sysinfo_buff, s);	
-//	strcat(sysinfo_buff, comma);
-//	memset(s, 0, 128);
-	/* total/free memory */
-//	meminfo_t mem;
-//	get_memory(&mem);
-//	mem.total;
-//	mem.free;
-//	sprintf(s, "%s/%s", mem.total, mem.free);
-//	strcat(sysinfo_buff, s);	
-//	strcat(sysinfo_buff, comma);
-//	memset(s, 0, 128);
-	
+//	memset(s, 0, TMP_LEN);
+	///* uptime */
+	//get_uptime(s);
+	//strcat(sysinfo_buff, s);	
+	//strcat(sysinfo_buff, comma);
+	//memset(s, 0, TMP_LEN);
+	///* total/free memory */
+	//get_memory(s);
+	//strcat(sysinfo_buff, s);	
+	//strcat(sysinfo_buff, comma);
+	//memset(s, 0, TMP_LEN);
+		
 	strcat(sysinfo_buff, quote);
-	if(sysinfo_buff[strlen(sysinfo_buff) -2] == comma[0])
-	{
-		sysinfo_buff[strlen(sysinfo_buff) -2] = sysinfo_buff[strlen(sysinfo_buff) - 1];
-		sysinfo_buff[strlen(sysinfo_buff) -1] = NULL;
-	}
+	/* Judge whether the last one is comma */
+	compare_with_comma(sysinfo_buff);
 
 	//network information
 	strcat(netinfo_buff, "wan_iface");	
@@ -128,56 +193,36 @@ int data_package(char *data)
 	strcat(netinfo_buff, comma);
 	strcat(netinfo_buff, "wangateway");	
 	strcat(netinfo_buff, comma);
-	/* DNS */
-//	int i;
-//	const dns_list_t *dns;
-//	dns = get_dns();        // static buffer
-//	for (i = 0 ; i < dns->count; ++i) 
-//	{
-//		sprintf(s + strlen(s), "%s'%s:%u'", i ? "," : "", inet_ntoa(dns->dns[i].addr), dns->dns[i].port);
-//	}
-//	strcat(netinfo_buff, s);	
-//	strcat(netinfo_buff, comma);
-//	memset(s, 0, 128);
-//
-//	strcat(netinfo_buff, "wanstatus");	
-//	strcat(netinfo_buff, comma);
+	///* DNS */
+	//get_dns_info(s);
+	//strcat(netinfo_buff, s);	
+	//strcat(netinfo_buff, comma);
+	//memset(s, 0, TMP_LEN);
+
+	strcat(netinfo_buff, "wanstatus");	
+	strcat(netinfo_buff, comma);
 	/* connection uptime */
-//	struct sysinfo si;
-//	long uptime;
-//	
-//	s[0] = '-';
-//	s[1] = 0;
-//	sysinfo(&si);
-//	if(f_read("/var/lib/misc/wantime", &uptime, sizeof(uptime)) == sizeof(uptime))
-//	{
-//		reltime(s, si.uptime - uptime);
-//	}
-//	strcat(netinfo_buff, s);	
-//	strcat(netinfo_buff, comma);
-//	memset(s, 0, 128);
+	//get_connection_uptime(s);
+	//strcat(netinfo_buff, s);	
+	//strcat(netinfo_buff, comma);
+	//memset(s, 0, TMP_LEN);
 
 	strcat(netinfo_buff, quote);
-	if(netinfo_buff[strlen(netinfo_buff) -2] == comma[0])
-	{
-		netinfo_buff[strlen(netinfo_buff) -2] = netinfo_buff[strlen(netinfo_buff) - 1];
-		netinfo_buff[strlen(netinfo_buff) -1] = NULL;
-	}
+	compare_with_comma(netinfo_buff);
 
 	//data usage 
 	strcat(data_usage_buff, "active lan");	
 	strcat(data_usage_buff, comma);
 	strcat(data_usage_buff, "wl_radio");	
 	strcat(data_usage_buff, comma);
+	strcat(data_usage_buff, "active_vpns");	
+	strcat(data_usage_buff, comma);
 	strcat(data_usage_buff, "data send");	
 	strcat(data_usage_buff, comma);
 	strcat(data_usage_buff, "data received");	
+
 	strcat(data_usage_buff, quote);
-	if(data_usage_buff[strlen(data_usage_buff) -2] == comma)
-	{
-		data_usage_buff[strlen(data_usage_buff) -2] = data_usage_buff[strlen(data_usage_buff) - 1];
-		data_usage_buff[strlen(data_usage_buff) -1] = NULL;
-	}
+	compare_with_comma(data_usage_buff);
 
 	strcat(data, "|");
 	strcat(data, sysinfo_buff);
@@ -188,20 +233,10 @@ int data_package(char *data)
 
 	data[strlen(data)] = '\n';
 
-	/* reset buffs */
-	memset(main_buff, 0, BUFF_SIZE);
-	memset(sysinfo_buff, 0, BUFF_SIZE);
-	memset(netinfo_buff, 0, BUFF_SIZE);
-	memset(data_usage_buff, 0, BUFF_SIZE);
- 	strncpy(main_buff, "i=>'", strlen("i=>'"));
- 	strncpy(sysinfo_buff, "s=>'", strlen("s=>'"));
- 	strncpy(netinfo_buff, "n=>'", strlen("n=>'"));
- 	strncpy(data_usage_buff, "d=>'", strlen("d=>'"));
-
 	return 0;
 }
 
-int send_data_to_server(int sockfd)
+void *send_data_to_server(void *sockfd)
 {
 	int n = 0;
 	char sendbuff[BUFF_SIZE];
@@ -213,21 +248,21 @@ int send_data_to_server(int sockfd)
 		if(data_package(sendbuff) != 0)
 		{
 //			syslog(LOG_ERR, "Package Data Error!!!");
-			return -1;
+//			return -1;
 		}
-		n = send(sockfd, sendbuff, strlen(sendbuff), 0); 
+		n = send(*(int *)sockfd, sendbuff, strlen(sendbuff), 0); 
 		if(n < 0) {
 //			syslog(LOG_ERR, "Send to Server Error!!!");
-			return -1;
+//			return -1;
 		}
 
 		printf("send to server: %s\n", sendbuff);
 	}
 
-	return 0;
+//	return 0;
 }
 
-int send_heartbeat_to_server(int sockfd)
+void *send_heartbeat_to_server(void *sockfd)
 {
 	int n = 0;
 	char sendbuff[BUFF_SIZE];
@@ -236,17 +271,17 @@ int send_heartbeat_to_server(int sockfd)
 	{
 		sleep(5);		//心跳包发送时间间隔
 		memset(sendbuff, 0, BUFF_SIZE);
-		strncpy(sendbuff, "Heartbeat data: online", strlen("Heartbeat data: online"));
-		n = send(sockfd, sendbuff, strlen(sendbuff), 0); 
+		strncpy(sendbuff, "Heartbeat data(online)", strlen("Heartbeat data(online)"));
+		n = send(*(int *)sockfd, sendbuff, strlen(sendbuff), 0); 
 		if(n < 0) {
 //			syslog(LOG_ERR, "Send to Server Error!!!");
-			return -1;
+//			return -1;
 		}
 	
 		printf("send to server: %s\n", sendbuff);
 	}
 
-	return 0;
+//	return 0;
 }
 
 char *recv_data_from_server(int sockfd, char *recvdata, int *len)
@@ -345,15 +380,25 @@ void analysis_data(char *data)
 	}
 	else if(data[4] == '1')
 	{
+//		syslog(LOG_ERR, "Account ID or IMEI Number is blank on cloudAXS server");
+		printf("Account ID or IMEI Number is blank on cloudAXS server\n");
+	}
+	else if(data[4] == '2')
+	{
 //		syslog(LOG_ERR, "Unknown Account ID on cloudAXS server");
 		printf("Unknown Account ID on cloudAXS server\n");
 	}
-	else if(data[4] == '2')
+	else if(data[4] == '3')
 	{
 //		syslog(LOG_ERR, "Unknown IMEI Number on cloudAXS server");
 		printf("Unknown IMEI Number on cloudAXS server\n");
 	}
-	else if(data[4] == '3')
+	else if(data[4] == '4')
+	{
+//		syslog(LOG_ERR, "IMEI Number not registered with Account ID");
+		printf("IMEI Number not registered with Account ID\n");
+	}
+	else if(data[4] == '5')
 	{
 		printf("Reboot router asap\n");
 //		reboot_router();	//待完成
@@ -380,13 +425,13 @@ int main()
 		return -1;
 	}
 
-	ret = pthread_create(&data_pid, NULL, send_data_to_server, sockfd);	//线程1, 发送数据
+	ret = pthread_create(&data_pid, NULL, &send_data_to_server, &sockfd);	//线程1, 发送数据
 	if(ret < 0)
 	{
 		perror("create data pid failed");
 		return -1;
 	}
-	ret = pthread_create(&hb_pid, NULL, send_heartbeat_to_server, sockfd);	//线程2, 发送心跳包
+	ret = pthread_create(&hb_pid, NULL, &send_heartbeat_to_server, &sockfd);	//线程2, 发送心跳包
 	if(ret < 0)
 	{
 		perror("create data pid failed");
