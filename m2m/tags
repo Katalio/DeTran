@@ -1,0 +1,406 @@
+!_TAG_FILE_FORMAT	2	/extended format; --format=1 will not append ;" to lines/
+!_TAG_FILE_SORTED	1	/0=unsorted, 1=sorted, 2=foldcase/
+!_TAG_PROGRAM_AUTHOR	Darren Hiebert	/dhiebert@users.sourceforge.net/
+!_TAG_PROGRAM_NAME	Exuberant Ctags	//
+!_TAG_PROGRAM_URL	http://ctags.sourceforge.net	/official site/
+!_TAG_PROGRAM_VERSION	5.9~svn20110310	//
+AD_UPGRADE_flag	./m2m.c	/^volatile int AD_UPGRADE_flag = 0;$/;"	v
+ARGV_SIZE	./m2m.c	4205;"	d	file:
+CAP_FILE_UPLOAD	./m2m.h	212;"	d
+CAP_FILE_UPLOAD_ACK	./m2m.h	213;"	d
+CFG_FILE_REQ	./m2m.h	218;"	d
+CFG_FILE_REQ_ACK	./m2m.h	219;"	d
+CLIENT_AUTH_CODE	./m2m.h	257;"	d
+CLIENT_MAC	./m2m.h	249;"	d
+CLIENT_MAC_LEN	./m2m.h	265;"	d
+CLIENT_MAIL	./m2m.h	254;"	d
+CLIENT_NAME	./m2m.h	259;"	d
+CLIENT_PHONE	./m2m.h	255;"	d
+CLIENT_STATUS	./m2m.h	251;"	d
+CLIENT_STATUS_CONN	./m2m.h	272;"	d
+CLIENT_STATUS_DOWN	./m2m.h	271;"	d
+CLIENT_STATUS_HB	./m2m.h	270;"	d
+CLIENT_STATUS_LEN	./m2m.h	267;"	d
+CLIENT_STATUS_UP	./m2m.h	269;"	d
+CLIENT_TRAFIC_LEN	./m2m.h	266;"	d
+CLIENT_VISITED_URL	./m2m.h	253;"	d
+CLIENT_WEIXIN	./m2m.h	256;"	d
+CLINET_TRAFIC	./m2m.h	250;"	d
+CMD_DEVICE_OFFLINE	./m2m.h	273;"	d
+DELETE_FILE	./m2m.h	197;"	d
+DELETE_FILE_ACK	./m2m.h	198;"	d
+DLT_ARCNET	./m2m.c	1992;"	d	file:
+DLT_AX25	./m2m.c	1988;"	d	file:
+DLT_CHAOS	./m2m.c	1990;"	d	file:
+DLT_EN10MB	./m2m.c	1986;"	d	file:
+DLT_EN3MB	./m2m.c	1987;"	d	file:
+DLT_FDDI	./m2m.c	1995;"	d	file:
+DLT_IEEE802	./m2m.c	1991;"	d	file:
+DLT_NULL	./m2m.c	1985;"	d	file:
+DLT_PPP	./m2m.c	1994;"	d	file:
+DLT_PRONET	./m2m.c	1989;"	d	file:
+DLT_SLIP	./m2m.c	1993;"	d	file:
+DOWNLOAD_AD	./m2m.h	176;"	d
+DOWNLOAD_AD_ACK	./m2m.h	177;"	d
+DOWNLOAD_CFG_FILE	./m2m.h	200;"	d
+DOWNLOAD_CFG_FILE_ACK	./m2m.h	201;"	d
+DOWNLOAD_CFG_UDP	./m2m.h	215;"	d
+DOWNLOAD_CFG_UDP_ACK	./m2m.h	216;"	d
+DOWNLOAD_INFO	./m2m.h	173;"	d
+DOWNLOAD_INFO_ACK	./m2m.h	174;"	d
+DOWNLOAD_INFO_EX	./m2m.h	203;"	d
+DOWNLOAD_INFO_EX_ACK	./m2m.h	204;"	d
+DOWNLOAD_REPORT	./m2m.h	179;"	d
+DOWNLOAD_REPORT_ACK	./m2m.h	180;"	d
+DOWNLOAD_REPORT_HEAD	./m2m.h	/^}DOWNLOAD_REPORT_HEAD;$/;"	t	typeref:struct:_DOWNLOAD_REPORT_HEAD
+FILE_INFO	./m2m.h	/^}FILE_INFO;$/;"	t	typeref:struct:_FILE_INFO
+FILE_LIST_GET	./m2m.h	191;"	d
+FILE_LIST_GET_ACK	./m2m.h	192;"	d
+FILE_NAME	./m2m.h	262;"	d
+FILE_REQ	./m2m.h	206;"	d
+FILE_REQ_ACK	./m2m.h	207;"	d
+FILE_SIZE	./m2m.h	263;"	d
+FTP_FILE_TMP	./m2m.h	37;"	d
+ID_CARD	./m2m.h	258;"	d
+JSON_BUF_LEN	./m2m.h	308;"	d
+LINKTYPE_ARCNET	./m2m.c	2004;"	d	file:
+LINKTYPE_AX25	./m2m.c	2000;"	d	file:
+LINKTYPE_CHAOS	./m2m.c	2002;"	d	file:
+LINKTYPE_ETHERNET	./m2m.c	1998;"	d	file:
+LINKTYPE_EXP_ETHERNET	./m2m.c	1999;"	d	file:
+LINKTYPE_FDDI	./m2m.c	2007;"	d	file:
+LINKTYPE_NULL	./m2m.c	1997;"	d	file:
+LINKTYPE_PPP	./m2m.c	2006;"	d	file:
+LINKTYPE_PRONET	./m2m.c	2001;"	d	file:
+LINKTYPE_SLIP	./m2m.c	2005;"	d	file:
+LINKTYPE_TOKEN_RING	./m2m.c	2003;"	d	file:
+LIST_APPNED	./m2m.c	4366;"	d	file:
+M2M_CONFIG	./m2m.h	/^}M2M_CONFIG;$/;"	t	typeref:struct:_M2M_CONFIG
+M2M_CONFIG_GET	./m2m.h	155;"	d
+M2M_CONFIG_GET_ACK	./m2m.h	156;"	d
+M2M_CONFIG_REQ	./m2m.h	167;"	d
+M2M_CONFIG_REQ_ACK	./m2m.h	168;"	d
+M2M_CONFIG_SET	./m2m.h	158;"	d
+M2M_CONFIG_SET_ACK	./m2m.h	159;"	d
+M2M_CONFIG_TRAP	./m2m.h	161;"	d
+M2M_CONFIG_TRAP_ACK	./m2m.h	162;"	d
+M2M_FTP	./m2m.h	121;"	d
+M2M_HEAD_LEN	./m2m.h	55;"	d
+M2M_HEARTBEAT	./m2m.h	152;"	d
+M2M_HEARTBEAT_ACK	./m2m.h	153;"	d
+M2M_LOGIN	./m2m.h	146;"	d
+M2M_LOGIN_ACK	./m2m.h	147;"	d
+M2M_LOGOUT	./m2m.h	149;"	d
+M2M_LOGOUT_ACK	./m2m.h	150;"	d
+M2M_PROTOCOL_HDR	./m2m.h	/^}M2M_PROTOCOL_HDR;$/;"	t	typeref:struct:_M2M_PROTOCOL_HDR
+M2M_PROTOCOL_HDR_T	./m2m.h	/^} M2M_PROTOCOL_HDR_T;$/;"	t	typeref:struct:_M2M_PROTOCOL_HDR_T
+M2M_PROTOCOL_TLV	./m2m.h	/^}M2M_PROTOCOL_TLV;$/;"	t	typeref:struct:_M2M_PROTOCOL_TLV
+M2M_REGISTER	./m2m.h	164;"	d
+M2M_REGISTER_ACK	./m2m.h	165;"	d
+M2M_REQ_PDU_BUF	./m2m.h	57;"	d
+M2M_RES_PDU_BUF	./m2m.h	58;"	d
+M2M_TCP	./m2m.h	120;"	d
+M2M_TCP_FILE_PUT	./m2m.h	286;"	d
+M2M_TCP_FILE_PUT_ACK	./m2m.h	287;"	d
+M2M_TCP_FILE_PUT_REQ	./m2m.h	284;"	d
+M2M_TCP_FILE_PUT_REQ_ACK	./m2m.h	285;"	d
+M2M_TCP_FILE_REQ	./m2m.h	280;"	d
+M2M_TCP_FILE_REQ_ACK	./m2m.h	281;"	d
+M2M_TCP_HDR	./m2m.h	/^}M2M_TCP_HDR;$/;"	t	typeref:struct:_M2M_TCP_HDR
+M2M_TCP_LOGIN	./m2m.h	276;"	d
+M2M_TCP_LOGIN_ACK	./m2m.h	277;"	d
+M2M_TCP_LOGOUT	./m2m.h	278;"	d
+M2M_TCP_LOGOUT_ACK	./m2m.h	279;"	d
+M2M_TCP_MD5	./m2m.h	282;"	d
+M2M_TCP_MD5_ACK	./m2m.h	283;"	d
+M2M_TL	./m2m.h	/^}M2M_TL;$/;"	t	typeref:struct:_M2M_TL
+M2M_TLV_VALUE	./m2m.h	56;"	d
+M2M_UDP	./m2m.h	119;"	d
+M2M_VT_CH_REPORT	./m2m.h	237;"	d
+M2M_VT_CH_REPORT_ACK	./m2m.h	238;"	d
+M2M_VT_IP_ACK	./m2m.h	235;"	d
+M2M_VT_IP_REQ	./m2m.h	234;"	d
+MAC_LIST	./m2m.c	/^}MAC_LIST;$/;"	t	typeref:struct:_MAC_LIST	file:
+N_ACK	./m2m.c	/^volatile int N_ACK = 0;$/;"	v
+OEM_CAMERA_CONFIG_GET	./m2m.h	243;"	d
+OEM_CAMERA_CONFIG_GET_ACK	./m2m.h	244;"	d
+OEM_CAMERA_CONFIG_SET	./m2m.h	240;"	d
+OEM_CAMERA_CONFIG_SET_ACK	./m2m.h	241;"	d
+OEM_CAMERA_RESET	./m2m.h	246;"	d
+OEM_CAMERA_RESET_ACK	./m2m.h	247;"	d
+PACKET_CAP	./m2m.h	209;"	d
+PACKET_CAP_ACK	./m2m.h	210;"	d
+PACKET_CURRENT	./m2m.h	261;"	d
+PACKET_TOTAL	./m2m.h	260;"	d
+PCAP_FILE	./m2m.c	1975;"	d	file:
+PCAP_FILE_SIZE	./m2m.c	2114;"	d	file:
+PCAP_VERSION_MAJOR	./m2m.c	1979;"	d	file:
+PCAP_VERSION_MINOR	./m2m.c	1982;"	d	file:
+QUERY_DEVICE	./m2m.h	224;"	d
+QUERY_DEVICE_ACK	./m2m.h	225;"	d
+RECV	./m2m.h	40;"	d
+REMOTE_CTRL	./m2m.h	170;"	d
+REMOTE_CTRL_ACK	./m2m.h	171;"	d
+REMOTE_DEVICE_CTRL	./m2m.h	185;"	d
+REMOTE_DEVICE_CTRL_ACK	./m2m.h	186;"	d
+REPORT_DEVICE	./m2m.h	182;"	d
+REPORT_DEVICE_ACK	./m2m.h	183;"	d
+REPORT_FILE_LIST	./m2m.h	194;"	d
+REPORT_FILE_LIST_ACK	./m2m.h	195;"	d
+REPORT_STATUS	./m2m.h	221;"	d
+REPORT_STATUS_ACK	./m2m.h	222;"	d
+REPORT_URL	./m2m.h	188;"	d
+REPORT_URL_ACK	./m2m.h	189;"	d
+SEND	./m2m.h	39;"	d
+SEND_SMS	./m2m.h	230;"	d
+SEND_SMS_ACK	./m2m.h	231;"	d
+SF_BOX_PORT	./m2m.h	306;"	d
+SF_JSON_ELM_COUNT	./m2m.h	307;"	d
+ST_DOWNLOAD_INFO_EX	./m2m.h	/^}ST_DOWNLOAD_INFO_EX;$/;"	t	typeref:struct:_ST_DOWNLOAD_INFO_EX
+ST_FILE_REQ	./m2m.h	/^}ST_FILE_REQ;$/;"	t	typeref:struct:_ST_FILE_REQ
+ST_PACKET_CAP	./m2m.h	/^}ST_PACKET_CAP;$/;"	t	typeref:struct:_ST_PACKET_CAP
+ST_PACKET_CAP_UPLOAD	./m2m.h	/^}ST_PACKET_CAP_UPLOAD;$/;"	t	typeref:struct:_ST_PACKET_CAP_UPLOAD
+SYNC_TIME	./m2m.h	227;"	d
+SYNC_TIME_ACK	./m2m.h	228;"	d
+TAG0004	./m2m.h	252;"	d
+TCPDUMP_MAGIC	./m2m.c	1977;"	d	file:
+TCP_BUF_SIZE	./m2m.c	1791;"	d	file:
+TCP_FILE_REQ	./m2m.h	/^}TCP_FILE_REQ;$/;"	t	typeref:struct:_TCP_FILE_REQ
+UDP_MAX_SEND_COUNT	./m2m.h	38;"	d
+YEAR2015	./m2m.c	1974;"	d	file:
+_DOWNLOAD_REPORT_HEAD	./m2m.h	/^typedef struct _DOWNLOAD_REPORT_HEAD$/;"	s
+_FILE_INFO	./m2m.h	/^typedef struct _FILE_INFO$/;"	s
+_M2M_CONFIG	./m2m.h	/^typedef struct _M2M_CONFIG$/;"	s
+_M2M_PROTOCOL_HDR	./m2m.h	/^typedef struct _M2M_PROTOCOL_HDR$/;"	s
+_M2M_PROTOCOL_HDR_T	./m2m.h	/^typedef struct _M2M_PROTOCOL_HDR_T$/;"	s
+_M2M_PROTOCOL_TLV	./m2m.h	/^typedef struct _M2M_PROTOCOL_TLV$/;"	s
+_M2M_TCP_HDR	./m2m.h	/^typedef struct _M2M_TCP_HDR$/;"	s
+_M2M_TL	./m2m.h	/^typedef struct _M2M_TL$/;"	s
+_MAC_LIST	./m2m.c	/^typedef struct _MAC_LIST{$/;"	s	file:
+_ST_DOWNLOAD_INFO_EX	./m2m.h	/^typedef struct _ST_DOWNLOAD_INFO_EX$/;"	s
+_ST_FILE_REQ	./m2m.h	/^typedef struct _ST_FILE_REQ$/;"	s
+_ST_PACKET_CAP	./m2m.h	/^typedef struct _ST_PACKET_CAP$/;"	s
+_ST_PACKET_CAP_UPLOAD	./m2m.h	/^typedef struct _ST_PACKET_CAP_UPLOAD$/;"	s
+_TCP_FILE_REQ	./m2m.h	/^typedef struct _TCP_FILE_REQ$/;"	s
+__M2M_H__	./m2m.h	2;"	d
+_cops	./m2m.c	/^struct _cops{$/;"	s	file:
+_domain_node	./m2m.c	/^typedef struct _domain_node{$/;"	s	file:
+_elm	./m2m.h	/^typedef struct _elm{$/;"	s
+_json	./m2m.h	/^typedef struct _json{$/;"	s
+_url_report_node	./m2m.c	/^typedef struct _url_report_node{$/;"	s	file:
+arp_get	./m2m.c	/^int arp_get(char *req_ip,char *mac)$/;"	f
+bind_ip	./m2m.h	/^	unsigned long bind_ip;$/;"	m	struct:_M2M_CONFIG
+bind_ip_str	./m2m.h	/^	char bind_ip_str[16];$/;"	m	struct:_M2M_CONFIG
+bind_port	./m2m.h	/^	int bind_port;$/;"	m	struct:_M2M_CONFIG
+bpf_int32	./m2m.c	/^typedef int bpf_int32 ;$/;"	t	file:
+bpf_u_int32	./m2m.c	/^typedef unsigned int bpf_u_int32 ;$/;"	t	file:
+buf	./m2m.h	/^	char *buf;$/;"	m	struct:_json
+caplen	./m2m.c	/^        bpf_u_int32 caplen;     \/* length of portion present *\/$/;"	m	struct:pcap_pkthdr	file:
+caplen	./m2m.c	/^    bpf_u_int32 caplen;		\/* length of portion present *\/$/;"	m	struct:pcap_sf_pkthdr	file:
+check_md5	./m2m.c	/^int check_md5(char *file,char *md5)$/;"	f
+check_online	./m2m.c	/^static int check_online()$/;"	f	file:
+close_socket	./m2m.c	/^static int close_socket(int sockfd)$/;"	f	file:
+cmd_id	./m2m.h	/^	unsigned short cmd_id;	\/\/80 05$/;"	m	struct:_M2M_PROTOCOL_HDR
+cmd_id	./m2m.h	/^	unsigned short cmd_id;$/;"	m	struct:_M2M_TCP_HDR
+cmd_sn	./m2m.h	/^	unsigned int cmd_sn;$/;"	m	struct:_DOWNLOAD_REPORT_HEAD
+cmd_sn	./m2m.h	/^	unsigned int cmd_sn;$/;"	m	struct:_ST_FILE_REQ
+cmd_sn	./m2m.h	/^	unsigned int cmd_sn;$/;"	m	struct:_TCP_FILE_REQ
+cmdid	./m2m.h	/^	unsigned short cmdid;$/;"	m	struct:_M2M_PROTOCOL_HDR_T
+connect_m2m_tcp_server	./m2m.c	/^static int connect_m2m_tcp_server(unsigned long local_ip, unsigned short local_port, unsigned long dest_ip, unsigned long dest_port)$/;"	f	file:
+connect_to_server	./m2m.c	/^static int connect_to_server(char *sock_name)$/;"	f	file:
+create_report_status_socket	./m2m.c	/^int create_report_status_socket(unsigned long *svrip)$/;"	f
+current	./m2m.h	/^	unsigned short	current;$/;"	m	struct:_ST_PACKET_CAP_UPLOAD
+delete_files	./m2m.c	/^static int delete_files(char *param_ptr, int param_len)$/;"	f	file:
+destroy_unode	./m2m.c	/^void destroy_unode(url_report_node *tmp_unode)$/;"	f
+dev_sn	./m2m.h	/^	char dev_sn[16];$/;"	m	struct:_M2M_PROTOCOL_HDR_T
+domain	./m2m.c	/^	char *domain;$/;"	m	struct:_domain_node	file:
+domain_list	./m2m.c	/^	domain_node *domain_list;$/;"	m	struct:_url_report_node	file:
+domain_node	./m2m.c	/^}domain_node;$/;"	t	typeref:struct:_domain_node	file:
+download_thread	./m2m.c	/^void download_thread(void *arg)$/;"	f
+download_thread_ex	./m2m.c	/^void download_thread_ex(void *arg)$/;"	f
+download_thread_ex_tcp	./m2m.c	/^void download_thread_ex_tcp(void *arg)$/;"	f
+elm_count	./m2m.h	/^	int elm_count;$/;"	m	struct:_json
+end	./m2m.h	/^	unsigned int  end;$/;"	m	struct:_ST_PACKET_CAP
+exdev_handle_thread	./m2m.c	/^void exdev_handle_thread(void *arg)$/;"	f
+execute_remote_ctrl	./m2m.c	/^int execute_remote_ctrl(char *param_ptr)$/;"	f
+external_handler	./m2m.c	/^static void *external_handler(int fd)$/;"	f	file:
+filecount	./m2m.h	/^	unsigned char filecount;$/;"	m	struct:_ST_DOWNLOAD_INFO_EX
+filelist	./m2m.h	/^	FILE_INFO filelist[];$/;"	m	struct:_ST_DOWNLOAD_INFO_EX
+filename	./m2m.h	/^	unsigned char filename[64];$/;"	m	struct:_FILE_INFO
+filename_len	./m2m.h	/^	unsigned short filename_len;$/;"	m	struct:_DOWNLOAD_REPORT_HEAD
+filesize	./m2m.h	/^	unsigned int filesize;$/;"	m	struct:_DOWNLOAD_REPORT_HEAD
+format_sf_time	./m2m.c	/^void format_sf_time(char *buf)$/;"	f
+fromaddr	./m2m.c	/^struct sockaddr_in fromaddr;$/;"	v	typeref:struct:sockaddr_in
+fromaddr_r	./m2m.c	/^struct sockaddr_in fromaddr_r;$/;"	v	typeref:struct:sockaddr_in
+g_cops	./m2m.c	/^}g_cops[]={$/;"	v	typeref:struct:_cops
+g_down_info	./m2m.c	/^ST_DOWNLOAD_INFO_EX *g_down_info;$/;"	v
+g_downloading	./m2m.c	/^unsigned char g_downloading=0;$/;"	v
+g_exdev_running	./m2m.c	/^unsigned char g_exdev_running=0;$/;"	v
+g_get_cap_upload_ack	./m2m.c	/^int g_get_cap_upload_ack=0;$/;"	v
+g_get_file_req_ack	./m2m.c	/^int g_get_file_req_ack=0;$/;"	v
+g_login_ack	./m2m.c	/^int g_login_ack=0,g_report_status_ack=0,g_sync_time_ack=0,r_login_ack = 0, r_report_status_ack = 0;$/;"	v
+g_m2m_server_ip	./m2m.c	/^unsigned long g_m2m_server_ip = 0;$/;"	v
+g_m2m_sms_ack	./m2m.c	/^char g_m2m_sms_ack=0;$/;"	v
+g_packet_id	./m2m.c	/^unsigned int g_packet_id=0;$/;"	v
+g_pcap_info	./m2m.c	/^ST_PACKET_CAP g_pcap_info;$/;"	v
+g_pcap_working	./m2m.c	/^int g_pcap_working=0;$/;"	v
+g_query_ack	./m2m.c	/^char g_query_ack=0;$/;"	v
+g_recv_file_fd	./m2m.c	/^FILE *g_recv_file_fd=NULL;$/;"	v
+g_report_status_ack	./m2m.c	/^int g_login_ack=0,g_report_status_ack=0,g_sync_time_ack=0,r_login_ack = 0, r_report_status_ack = 0;$/;"	v
+g_sync_time_ack	./m2m.c	/^int g_login_ack=0,g_report_status_ack=0,g_sync_time_ack=0,r_login_ack = 0, r_report_status_ack = 0;$/;"	v
+g_tcp_serial_num	./m2m.c	/^int g_tcp_serial_num=0;$/;"	v
+get_cops	./m2m.c	/^unsigned char get_cops()$/;"	f
+get_mac_format	./m2m.c	/^int get_mac_format(char *possiblemac,char *mac)$/;"	f
+get_md5	./m2m.c	/^int get_md5(char *file,char *md5)$/;"	f
+handle_cfg	./m2m.c	/^int handle_cfg()$/;"	f
+handle_sf_request	./m2m.c	/^void handle_sf_request(int fd)$/;"	f
+heartbeat_intval	./m2m.h	/^	int heartbeat_intval;$/;"	m	struct:_M2M_CONFIG
+heartbeat_report_thread	./m2m.c	/^void heartbeat_report_thread(void *param)$/;"	f
+heartbeat_thread	./m2m.c	/^void heartbeat_thread(void *param)$/;"	f
+id	./m2m.h	/^	unsigned int  	id;$/;"	m	struct:_ST_PACKET_CAP_UPLOAD
+id	./m2m.h	/^	unsigned int  id;$/;"	m	struct:_ST_PACKET_CAP
+id	./m2m.h	/^	unsigned int id;$/;"	m	struct:_FILE_INFO
+id	./m2m.h	/^	unsigned int id;$/;"	m	struct:_ST_FILE_REQ
+id	./m2m.h	/^	unsigned int id;$/;"	m	struct:_TCP_FILE_REQ
+if_get_flag	./m2m.c	/^static int if_get_flag(int sock, char *interface)$/;"	f	file:
+if_get_index	./m2m.c	/^static int if_get_index(int sock, char *interface)$/;"	f	file:
+ignore_path	./m2m.c	/^static int ignore_path(char *path)$/;"	f	file:
+ip	./m2m.c	/^	char *ip;$/;"	m	struct:_url_report_node	file:
+json	./m2m.h	/^}json;$/;"	t	typeref:struct:_json
+json_add_elm	./m2m.c	/^int json_add_elm(json *js,char *name,char *value)$/;"	f
+json_add_num	./m2m.c	/^int json_add_num(json *js,char *name,unsigned long value)$/;"	f
+json_destroy	./m2m.c	/^int json_destroy(json *js)$/;"	f
+json_elm	./m2m.h	/^}json_elm;$/;"	t	typeref:struct:_elm
+json_end	./m2m.c	/^void json_end(json *js)$/;"	f
+json_get_elm_value	./m2m.c	/^char *json_get_elm_value(json_elm *elm,char *name)$/;"	f
+json_init	./m2m.c	/^int json_init(json *js,int len)$/;"	f
+json_start	./m2m.c	/^void json_start(json *js)$/;"	f
+keyword	./m2m.c	/^	char *keyword;$/;"	m	struct:_cops	file:
+len	./m2m.c	/^        bpf_u_int32 len;        \/* length this packet (off wire) *\/$/;"	m	struct:pcap_pkthdr	file:
+len	./m2m.c	/^    bpf_u_int32 len;		\/* length this packet (off wire) *\/$/;"	m	struct:pcap_sf_pkthdr	file:
+len	./m2m.h	/^	unsigned int len;$/;"	m	struct:_M2M_TCP_HDR
+len	./m2m.h	/^	unsigned int len;$/;"	m	struct:_ST_FILE_REQ
+len	./m2m.h	/^	unsigned int len;$/;"	m	struct:_TCP_FILE_REQ
+len	./m2m.h	/^	unsigned short len;		\/\/00 2A$/;"	m	struct:_M2M_PROTOCOL_HDR
+len	./m2m.h	/^	unsigned short len;$/;"	m	struct:_M2M_TL
+length	./m2m.h	/^	unsigned short length;$/;"	m	struct:_M2M_PROTOCOL_HDR_T
+linktype	./m2m.c	/^        bpf_u_int32 linktype;   \/* data link type (LINKTYPE_*) *\/$/;"	m	struct:pcap_file_header	file:
+list_rssi_min	./m2m.c	/^int list_rssi_min(MAC_LIST *maclist,int list_len)$/;"	f
+m2m_2_nd	./m2m.c	/^int m2m_2_nd(char * cmd)$/;"	f
+m2m_config	./m2m.c	/^M2M_CONFIG m2m_config;$/;"	v
+m2m_config_init	./m2m.c	/^static void m2m_config_init()$/;"	f	file:
+m2m_deamon	./m2m.c	/^static void m2m_deamon()$/;"	f	file:
+m2m_get_host	./m2m.c	/^static int m2m_get_host(const char *name, char *ipbuf)$/;"	f	file:
+m2m_gothup	./m2m.c	/^volatile int m2m_gothup = 0;$/;"	v
+m2m_gotterm	./m2m.c	/^volatile int m2m_gotterm = 0;$/;"	v
+m2m_gotuser	./m2m.c	/^volatile int m2m_gotuser = 0;$/;"	v
+m2m_inet_addr	./m2m.c	/^static unsigned long m2m_inet_addr(char *ipbuf, unsigned short len)$/;"	f	file:
+m2m_main	./m2m.c	/^int m2m_main(int argc, char *argv[])$/;"	f
+m2m_report_status_send_cmd	./m2m.c	/^int m2m_report_status_send_cmd(int fd,unsigned short cmd)$/;"	f
+m2m_res_buf	./m2m.c	/^char m2m_res_buf[M2M_RES_PDU_BUF];$/;"	v
+m2m_send_ack	./m2m.c	/^int m2m_send_ack(unsigned short cmd,unsigned int packid,unsigned char status)$/;"	f
+m2m_send_cmd	./m2m.c	/^int m2m_send_cmd(unsigned short cmd)$/;"	f
+m2m_send_file_req	./m2m.c	/^int m2m_send_file_req(unsigned short cmd,unsigned int id,unsigned int off,unsigned int len,unsigned int cmd_sn)$/;"	f
+m2m_sig_handler	./m2m.c	/^static void m2m_sig_handler(int sig)$/;"	f	file:
+mac	./m2m.c	/^	char mac[18];$/;"	m	struct:_MAC_LIST	file:
+magic	./m2m.c	/^        bpf_u_int32 magic;$/;"	m	struct:pcap_file_header	file:
+make_router_config	./m2m.c	/^static int make_router_config(char *conf_buf)$/;"	f	file:
+md5	./m2m.h	/^	unsigned char md5[32];$/;"	m	struct:_FILE_INFO
+mod_upgrade	./m2m.c	/^int mod_upgrade(char *patch)$/;"	f
+name	./m2m.h	/^	char *name;$/;"	m	struct:_elm
+next	./m2m.c	/^	struct _domain_node *next;$/;"	m	struct:_domain_node	typeref:struct:_domain_node::_domain_node	file:
+next	./m2m.c	/^	struct _url_report_node *next;$/;"	m	struct:_url_report_node	typeref:struct:_url_report_node::_url_report_node	file:
+node_find_by_ip	./m2m.c	/^url_report_node *node_find_by_ip(url_report_node *first_node,char *ip)$/;"	f
+off	./m2m.h	/^	unsigned int off;$/;"	m	struct:_ST_FILE_REQ
+off	./m2m.h	/^	unsigned int off;$/;"	m	struct:_TCP_FILE_REQ
+pack_sub_elem	./m2m.c	/^int pack_sub_elem(char *buf,unsigned int *cur_pos,unsigned short id,unsigned short value_len,void *value)$/;"	f
+packet_id	./m2m.c	/^unsigned int packet_id = 0;$/;"	v
+packet_id	./m2m.h	/^	unsigned int packet_id;	\/\/00 00 00 01$/;"	m	struct:_M2M_PROTOCOL_HDR
+parse_exdev_config	./m2m.c	/^static unsigned char parse_exdev_config(char *param_ptr, int param_len ,char *op)$/;"	f	file:
+parse_router_config	./m2m.c	/^static unsigned char parse_router_config(char *param_ptr, int param_len )$/;"	f	file:
+pcap_dump	./m2m.c	/^void pcap_dump(uint8_t *user, const struct pcap_pkthdr *h, const uint8_t *sp)$/;"	f
+pcap_file_header	./m2m.c	/^struct pcap_file_header {$/;"	s	file:
+pcap_pkthdr	./m2m.c	/^struct pcap_pkthdr {$/;"	s	file:
+pcap_sf_pkthdr	./m2m.c	/^struct pcap_sf_pkthdr {$/;"	s	file:
+pcap_thread	./m2m.c	/^void pcap_thread(void *arg)$/;"	f
+pcap_timeval	./m2m.c	/^struct pcap_timeval {$/;"	s	file:
+pcap_write_header	./m2m.c	/^static int pcap_write_header(FILE *fp, int linktype, int thiszone, int snaplen)$/;"	f	file:
+prefix	./m2m.h	/^	unsigned short prefix;$/;"	m	struct:_M2M_TCP_HDR
+print_hex	./m2m.c	/^void print_hex(char *data, int len, int op)$/;"	f
+process_m2m_Req	./m2m.c	/^static int process_m2m_Req( )$/;"	f	file:
+process_packet	./m2m.c	/^static int process_packet(char* pdu_ptr, int pdu_len)$/;"	f	file:
+process_report_Req	./m2m.c	/^static int process_report_Req(int socketfd, unsigned long svrip )$/;"	f	file:
+process_report_packet	./m2m.c	/^static int process_report_packet(char* pdu_ptr, int pdu_len, int socketfd)$/;"	f	file:
+product_id	./m2m.c	/^unsigned char product_id[24];$/;"	v
+product_id	./m2m.h	/^	char product_id[24];		\/\/31 38 39 31 32 33 34 35 36 37 38 00 00 00 00 00$/;"	m	struct:_M2M_PROTOCOL_HDR
+product_report_id	./m2m.c	/^unsigned char product_report_id[24];$/;"	v
+r_login_ack	./m2m.c	/^int g_login_ack=0,g_report_status_ack=0,g_sync_time_ack=0,r_login_ack = 0, r_report_status_ack = 0;$/;"	v
+r_report_status_ack	./m2m.c	/^int g_login_ack=0,g_report_status_ack=0,g_sync_time_ack=0,r_login_ack = 0, r_report_status_ack = 0;$/;"	v
+report_packet_id	./m2m.c	/^unsigned int report_packet_id = 0;$/;"	v
+report_status_alone	./m2m.c	/^void report_status_alone(void *param)$/;"	f
+report_udp_socket_create	./m2m.c	/^static int report_udp_socket_create(unsigned long local_ip, unsigned short local_port, unsigned long dest_ip, unsigned long dest_port)$/;"	f	file:
+report_udp_socket_recv	./m2m.c	/^static int report_udp_socket_recv(int fd, char *pdu_buf, int pdu_len, unsigned long svrip)$/;"	f	file:
+report_udp_socket_send	./m2m.c	/^static int report_udp_socket_send(int fd,char *pdu_buf, int pdu_len)$/;"	f	file:
+reserve	./m2m.h	/^	unsigned short reserve;$/;"	m	struct:_ST_DOWNLOAD_INFO_EX
+router_config	./m2m.c	/^char* router_config[] = {$/;"	v
+rssi	./m2m.c	/^	int rssi;$/;"	m	struct:_MAC_LIST	file:
+safe_flag	./m2m.h	/^	unsigned char safe_flag;$/;"	m	struct:_M2M_PROTOCOL_HDR_T
+send_data	./m2m.c	/^static int send_data(int sock, char *request)$/;"	f	file:
+send_download_report	./m2m.c	/^int send_download_report(unsigned char status,unsigned int cmd_sn,char *filename,unsigned int filesize)$/;"	f
+send_file_list	./m2m.c	/^int send_file_list()$/;"	f
+send_m2m_tcp_cmd	./m2m.c	/^int send_m2m_tcp_cmd(int fd,unsigned short cmd)$/;"	f
+send_pcap_file	./m2m.c	/^int send_pcap_file(unsigned int id,unsigned short total,unsigned short current,char *buf,unsigned int len)$/;"	f
+send_query_device	./m2m.c	/^int send_query_device(int argc,char *argv[])$/;"	f
+send_report_device	./m2m.c	/^int send_report_device(int argc,char *argv[])$/;"	f
+send_sta_sms	./m2m.c	/^int send_sta_sms(int argc,char *argv[])$/;"	f
+send_url_report	./m2m.c	/^void send_url_report(url_report_node *url_node)$/;"	f
+seq	./m2m.h	/^	unsigned int seq;$/;"	m	struct:_M2M_PROTOCOL_HDR_T
+serial	./m2m.h	/^	unsigned int serial;$/;"	m	struct:_M2M_TCP_HDR
+serveraddr	./m2m.c	/^struct sockaddr_in serveraddr;$/;"	v	typeref:struct:sockaddr_in
+serveraddr_r	./m2m.c	/^struct sockaddr_in serveraddr_r;$/;"	v	typeref:struct:sockaddr_in
+sf_get_traffic	./m2m.c	/^unsigned long sf_get_traffic()$/;"	f
+sfbox_thread	./m2m.c	/^void sfbox_thread(void *param)$/;"	f
+sigfigs	./m2m.c	/^        bpf_int32 sigfigs;    \/* accuracy of timestamps *\/$/;"	m	struct:pcap_file_header	file:
+size	./m2m.h	/^	unsigned int size;$/;"	m	struct:_FILE_INFO
+snaplen	./m2m.c	/^        bpf_u_int32 snaplen;    \/* max length saved portion of each pkt *\/$/;"	m	struct:pcap_file_header	file:
+socket_fd	./m2m.c	/^static int socket_fd = -1;$/;"	v	file:
+start	./m2m.h	/^	unsigned int  start;$/;"	m	struct:_ST_PACKET_CAP
+start_capture	./m2m.c	/^int start_capture(char *ifname,unsigned int duration,unsigned int caplen)$/;"	f
+start_n2n	./m2m.c	/^int start_n2n(char *ipaddr)$/;"	f
+start_pcap_upload	./m2m.c	/^int start_pcap_upload(unsigned int id,unsigned int pack_size)$/;"	f
+status	./m2m.h	/^	unsigned char status;$/;"	m	struct:_DOWNLOAD_REPORT_HEAD
+stop_n2n	./m2m.c	/^int stop_n2n(  )$/;"	f
+svr_domain	./m2m.h	/^	char svr_domain[128];$/;"	m	struct:_M2M_CONFIG
+svr_domain_ip	./m2m.h	/^	unsigned long svr_domain_ip;$/;"	m	struct:_M2M_CONFIG
+svr_ip	./m2m.h	/^	unsigned long svr_ip;$/;"	m	struct:_M2M_CONFIG
+svr_ip_str	./m2m.h	/^	char svr_ip_str[16];$/;"	m	struct:_M2M_CONFIG
+svr_port	./m2m.h	/^	int svr_port;$/;"	m	struct:_M2M_CONFIG
+tag	./m2m.h	/^	unsigned short tag;$/;"	m	struct:_M2M_TL
+thiszone	./m2m.c	/^        bpf_int32 thiszone;     \/* gmt to local correction *\/$/;"	m	struct:pcap_file_header	file:
+thread_external	./m2m.c	/^void thread_external(void *arg)$/;"	f
+thread_report_url	./m2m.c	/^void thread_report_url(void *arg)$/;"	f
+tlv_len	./m2m.h	/^	unsigned short tlv_len;		\/\/00 0B$/;"	m	struct:_M2M_PROTOCOL_TLV
+tlv_tag	./m2m.h	/^	unsigned short tlv_tag;		\/\/00 00$/;"	m	struct:_M2M_PROTOCOL_TLV
+tlv_value	./m2m.h	/^	char tlv_value[1024];		\/\/61 3D 31 30 30 26 62 3D 32 30 30 \/\/a=100&b=200$/;"	m	struct:_M2M_PROTOCOL_TLV
+total	./m2m.h	/^	unsigned short	total;$/;"	m	struct:_ST_PACKET_CAP_UPLOAD
+trafic_calc	./m2m.c	/^static unsigned long trafic_calc(void)$/;"	f	file:
+trafic_flag	./m2m.c	/^volatile int trafic_flag = 0;$/;"	v
+ts	./m2m.c	/^        struct timeval ts;      \/* time stamp *\/$/;"	m	struct:pcap_pkthdr	typeref:struct:pcap_pkthdr::timeval	file:
+ts	./m2m.c	/^    struct pcap_timeval ts;	\/* time stamp *\/$/;"	m	struct:pcap_sf_pkthdr	typeref:struct:pcap_sf_pkthdr::pcap_timeval	file:
+tv_sec	./m2m.c	/^    bpf_int32 tv_sec;		\/* seconds *\/$/;"	m	struct:pcap_timeval	file:
+tv_usec	./m2m.c	/^    bpf_int32 tv_usec;		\/* microseconds *\/$/;"	m	struct:pcap_timeval	file:
+type	./m2m.h	/^	unsigned char type;$/;"	m	struct:_M2M_PROTOCOL_HDR_T
+type	./m2m.h	/^	unsigned char type;$/;"	m	struct:_ST_DOWNLOAD_INFO_EX
+type	./m2m.h	/^	unsigned char type;$/;"	m	struct:_ST_PACKET_CAP
+udp_socket_create	./m2m.c	/^static int udp_socket_create(unsigned long local_ip, unsigned short local_port, unsigned long dest_ip, unsigned long dest_port)$/;"	f	file:
+udp_socket_recv	./m2m.c	/^static int udp_socket_recv(char *pdu_buf, int pdu_len)$/;"	f	file:
+udp_socket_send	./m2m.c	/^static int udp_socket_send(char *pdu_buf, int pdu_len)$/;"	f	file:
+url_report_node	./m2m.c	/^}url_report_node;$/;"	t	typeref:struct:_url_report_node	file:
+value	./m2m.c	/^	unsigned char value;$/;"	m	struct:_cops	file:
+value	./m2m.h	/^	char *value;$/;"	m	struct:_elm
+version	./m2m.h	/^	unsigned short version;	\/\/01 00$/;"	m	struct:_M2M_PROTOCOL_HDR
+version	./m2m.h	/^	unsigned short version;$/;"	m	struct:_M2M_PROTOCOL_HDR_T
+version	./m2m.h	/^	unsigned short version;$/;"	m	struct:_M2M_TCP_HDR
+version_major	./m2m.c	/^        u_short version_major;$/;"	m	struct:pcap_file_header	file:
+version_minor	./m2m.c	/^        u_short version_minor;$/;"	m	struct:pcap_file_header	file:
+wait_sock	./m2m.c	/^static int wait_sock(int fd, int sec, int usec)$/;"	f	file:

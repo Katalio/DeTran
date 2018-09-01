@@ -1,0 +1,30 @@
+!_TAG_FILE_FORMAT	2	/extended format; --format=1 will not append ;" to lines/
+!_TAG_FILE_SORTED	1	/0=unsorted, 1=sorted, 2=foldcase/
+!_TAG_PROGRAM_AUTHOR	Darren Hiebert	/dhiebert@users.sourceforge.net/
+!_TAG_PROGRAM_NAME	Exuberant Ctags	//
+!_TAG_PROGRAM_URL	http://ctags.sourceforge.net	/official site/
+!_TAG_PROGRAM_VERSION	5.9~svn20110310	//
+RTU_CMD_HEAD_T	./test.h	/^} RTU_CMD_HEAD_T;$/;"	t	typeref:struct:_rtu_cmd_head
+RTU_CMD_TLV_T	./test.h	/^} RTU_CMD_TLV_T;$/;"	t	typeref:struct:_rtu_cmd_tlv
+RTU_LOGOUT_ACK	./test.h	5;"	d
+RTU_LOGOUT_CMD	./test.h	4;"	d
+String2Bytes	./test.c	/^int String2Bytes(const char* str, unsigned char* buf, int len)$/;"	f
+TAG_ALARM	./test.h	10;"	d
+TAG_COLL_DATA	./test.h	8;"	d
+TAG_COLL_TIME	./test.h	9;"	d
+__TEST_H__	./test.h	2;"	d
+_rtu_cmd_head	./test.h	/^typedef struct _rtu_cmd_head$/;"	s
+_rtu_cmd_tlv	./test.h	/^typedef struct _rtu_cmd_tlv$/;"	s
+cmdid	./test.h	/^	unsigned short cmdid;$/;"	m	struct:_rtu_cmd_head
+dev_sn	./test.h	/^	char dev_sn[16];$/;"	m	struct:_rtu_cmd_head
+encode_rtu_pub_pack	./test.c	/^int encode_rtu_pub_pack(unsigned char *buf, int buf_len)$/;"	f
+length	./test.h	/^	unsigned short length;$/;"	m	struct:_rtu_cmd_head
+reg_addr	./test.h	/^	unsigned short reg_addr;$/;"	m	struct:_rtu_cmd_tlv
+safe_flag	./test.h	/^	unsigned char safe_flag;$/;"	m	struct:_rtu_cmd_head
+seq	./test.h	/^	unsigned int seq;$/;"	m	struct:_rtu_cmd_head
+slaveId	./test.h	/^	unsigned char slaveId;$/;"	m	struct:_rtu_cmd_tlv
+tlv_len	./test.h	/^	unsigned short tlv_len;$/;"	m	struct:_rtu_cmd_tlv
+tlv_tag	./test.h	/^	unsigned short tlv_tag;$/;"	m	struct:_rtu_cmd_tlv
+type	./test.h	/^	unsigned char type;$/;"	m	struct:_rtu_cmd_head
+type	./test.h	/^	unsigned char type;$/;"	m	struct:_rtu_cmd_tlv
+version	./test.h	/^	unsigned short version;$/;"	m	struct:_rtu_cmd_head
