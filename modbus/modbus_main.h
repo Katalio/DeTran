@@ -97,31 +97,16 @@ typedef struct _MODBUS_CONFIG
 #define RTU_HEARTBEAT_CMD		0x0003
 #define RTU_HEARTBEAT_ACK		0x8003
 
-#define RTU_PUB_CMD				0x0010
-#define RTU_PUB_ACK				0x8010
-
 #define RTU_SUB_CMD				0x0011
 #define RTU_SUB_ACK				0x8011
 
 #define RTU_OUTPUT_CMD			0x0012
 #define RTU_OUTPUT_ACK			0x8012
 
-#define RTU_SCRIPT_GET_CMD		0x0013
-#define RTU_SCRIPT_GET_ACK		0x8013
-
-#define RTU_SCRIPT_SET_CMD		0x0014
-#define RTU_SCRIPT_SET_ACK		0x8014
-
 #define RTU_SCRIPT_TRAP_CMD		0x0015
 #define RTU_SCRIPT_TRAP_ACK		0x8015
 
 #define RTU_TRANS_DATA_CMD		0x0007
 #define RTU_TRANS_DATA_ACK		0x8007
-
-/* tag cmd */
-#define TAG_COLL_DATA 			0x0130
-#define TAG_COLL_TIME 			0x0131
-#define TAG_ALARM_CMD 			0x0132
-#define TAG_INQUIRE_DATA		0x0133
 
 #endif /* _UNIT_TEST_H_ */

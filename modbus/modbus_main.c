@@ -2110,7 +2110,7 @@ int encode_rtu_alarm_pub_pack(unsigned char *buf, int buf_len, unsigned char *va
 	int n;
 
     memset(buf, 0, buf_len);
-	cmd->cmdid = htons(RTU_PUB_CMD);
+	cmd->cmdid = htons(0x0010);
 	cmd->seq = htonl(m_rtu_seq_num++);
 	cmd->version = htons(0x0300);
 	cmd->safe_flag = 0;		//安全标识:1启用, 0不启用
@@ -2130,7 +2130,7 @@ int encode_rtu_alarm_pub_pack(unsigned char *buf, int buf_len, unsigned char *va
 
 	memset(tlv, 0, sizeof(tlv));
 
-	tlv->tlv_tag = htons(TAG_COLL_DATA);
+	tlv->tlv_tag = htons(0x0130);
 
 	*(tlv->tlv_value + tlv_len) = 0x02;		//告警数据 
 	tlv_len += 1;
@@ -2152,6 +2152,7 @@ int encode_rtu_alarm_pub_pack(unsigned char *buf, int buf_len, unsigned char *va
     return length;
 }
 
+#if 0
 int encode_rtu_pub_pack(unsigned char *buf, int buf_len)
 {
 	RTU_CMD_HEAD *cmd = (RTU_CMD_HEAD *)buf;
@@ -2171,7 +2172,7 @@ int encode_rtu_pub_pack(unsigned char *buf, int buf_len)
 	int i;
 
     memset(buf, 0, buf_len);
-	cmd->cmdid = htons(RTU_PUB_CMD);
+	cmd->cmdid = htons(0x0010);
 	cmd->seq = htonl(m_rtu_seq_num++);
 	cmd->version = htons(0x0300);
 	cmd->safe_flag = 0;		//安全标识:1启用, 0不启用
@@ -2229,7 +2230,7 @@ int encode_rtu_pub_pack(unsigned char *buf, int buf_len)
 		memset(tlv, 0, sizeof(tlv));
 		tlv_len = 0;
 
-		tlv->tlv_tag = htons(TAG_COLL_DATA);
+		tlv->tlv_tag = htons(0x0130);
 		*(tlv->tlv_value + tlv_len) = 0x01;	//数据采集
 		tlv_len += 1;
 		*(tlv->tlv_value + tlv_len) = (unsigned char)atoi(slvid_value);
@@ -2255,6 +2256,7 @@ int encode_rtu_pub_pack(unsigned char *buf, int buf_len)
 
 	return length;
 }
+#endif
 
 static int m2m_get_host(const char *name, char *ipbuf)
 {
@@ -2411,17 +2413,17 @@ static int process_rtu_packet(int socket_fd, unsigned char *pdu_ptr, int pdu_len
 		//case RTU_HEARTBEAT_ACK:
 		//	syslog(LOG_NOTICE, "RTU Command(%02x) RTU_HEARTBEAT_ACK!!!", ntohs(rtu_req->cmdid));
 		//	break;
-		case RTU_PUB_ACK:
-			syslog(LOG_NOTICE, "RTU Command(%02x) RTU_PUB_ACK!!!", ntohs(rtu_req->cmdid));
-			if (pdu_ptr[sizeof(RTU_CMD_HEAD)] == 0x00)
-			{
-				syslog(LOG_NOTICE, "RTU Command(%02x): success!!!", ntohs(rtu_req->cmdid));
-			}
-			else
-			{
-				syslog(LOG_ERR, "RTU Command(%02x): TLV error!!!", ntohs(rtu_req->cmdid));
-			}
-			break;
+		//case RTU_PUB_ACK:
+		//	syslog(LOG_NOTICE, "RTU Command(%02x) RTU_PUB_ACK!!!", ntohs(rtu_req->cmdid));
+		//	if (pdu_ptr[sizeof(RTU_CMD_HEAD)] == 0x00)
+		//	{
+		//		syslog(LOG_NOTICE, "RTU Command(%02x): success!!!", ntohs(rtu_req->cmdid));
+		//	}
+		//	else
+		//	{
+		//		syslog(LOG_ERR, "RTU Command(%02x): TLV error!!!", ntohs(rtu_req->cmdid));
+		//	}
+		//	break;
 #if 0
 		case RTU_SUB_CMD:
 			syslog(LOG_NOTICE, "RTU Command(%02x) RTU_SUB_CMD!!!", ntohs(rtu_req->cmdid));
@@ -2480,7 +2482,6 @@ static int process_rtu_packet(int socket_fd, unsigned char *pdu_ptr, int pdu_len
 			rtu_res->length = htons(rtu_req_len);
 			udp_socket_send(socket_fd, modbus_res_buf, rtu_req_len);
 			break;
-#endif
 		case RTU_SCRIPT_GET_CMD:
 			syslog(LOG_NOTICE, "RTU Command(%02x) RTU_SCRIPT_GET_CMD!!!", ntohs(rtu_req->cmdid));
 			rtu_res->cmdid = htons(RTU_SCRIPT_GET_ACK);
@@ -2496,10 +2497,16 @@ static int process_rtu_packet(int socket_fd, unsigned char *pdu_ptr, int pdu_len
 			else
 			{
 				*(modbus_res_buf + sizeof(RTU_CMD_HEAD)) = 0x00;		//获取脚本成功
+				syslog(LOG_NOTICE, "RTU Command(%02x) Get scripts success!!!", ntohs(rtu_req->cmdid));
 				len = strlen(rtu_buf);
 				memcpy(modbus_res_buf + sizeof(RTU_CMD_HEAD) + 1, rtu_buf, len);
 				rtu_req_len = sizeof(RTU_CMD_HEAD) + 1 + len;
 				rtu_res->length = htons(rtu_req_len);
+
+				memset(str, 0, 1024);
+				HexToStr(modbus_res_buf, str, rtu_req_len);
+				syslog(LOG_NOTICE, "RTU_SCRIPT_GET_ACK:%s", str);
+
 				udp_socket_send(socket_fd, modbus_res_buf, rtu_req_len);
 			}
 			break;
@@ -2511,8 +2518,14 @@ static int process_rtu_packet(int socket_fd, unsigned char *pdu_ptr, int pdu_len
 			*(modbus_res_buf + sizeof(RTU_CMD_HEAD)) = 0x00;		//设置脚本成功
 			rtu_req_len = sizeof(RTU_CMD_HEAD) + 1;
 			rtu_res->length = htons(rtu_req_len);
+
+			memset(str, 0, 1024);
+			HexToStr(modbus_res_buf, str, rtu_req_len);
+			syslog(LOG_NOTICE, "RTU_SCRIPT_SET_ACK:%s", str);
+
 			udp_socket_send(socket_fd, modbus_res_buf, rtu_req_len);
 			break;
+#endif
 		default:
 			break;
 	}
@@ -2549,40 +2562,6 @@ static int process_req(int socket_fd)
 	process_rtu_packet(socket_fd, hdr, iRcv);
 }
 
-void *rtu_pub_thread_routine(void *arg)
-{
-	unsigned char buf[MAX_RTU_PACKET_LENGTH] = {0};
-	int pkt_length;
-	int ret;
-	unsigned int pub_interval = nvram_get_int("rtu_pub_interval");
-
-	
-	if (pub_interval < 5)
-	{
-		pub_interval = 5;	
-	}
-	
-	while (1)
-	{
-		sleep(pub_interval);
-
-		if (m_rtu_svr_socket < 0)
-		{
-			
-			continue ;
-		}
-		pkt_length = encode_rtu_pub_pack(buf, sizeof(buf));
-		ret = udp_socket_send(m_rtu_svr_socket, buf, pkt_length);
-		if (ret == -1)
-		{
-			close(m_rtu_svr_socket);
-			m_rtu_svr_socket = -1;
-		}
-	}
-
-    return NULL;
-}
-
 void rtu_pub_alarm_thread_routine(unsigned char *valaddr, short regaddr, int datatype, unsigned char status)
 {
     unsigned char buf[MAX_RTU_PACKET_LENGTH] = {0};
@@ -2615,138 +2594,6 @@ static int modbus_get_host(const char *name, char *ipbuf)
 	return 1; 
 }
 
-
-void *detran_rtu_routine(void *arg)
-{
-#define MAX_LOST_PACKET_NUM		5
-	char ibuf[21] = {0};
-	unsigned char mac[6] = {0};
-	unsigned long ip = 0;
-	struct timeval  tv;
-	char *remote_host = NULL;
-	unsigned int remote_port;
-	unsigned char buf[MAX_RTU_PACKET_LENGTH] = {0};
-	int pkt_length;
-	int ret;
-	int testIndex = 0;
-	int heartbeat_interval = nvram_get_int("m2m_heartbeat_intval");
-	char *heartbeat_mode = nvram_safe_get("rtu_heartbeat_mode");
-	
-	if (heartbeat_interval < 3)
-	{
-		heartbeat_interval = 3;
-	}
-	
-	remote_host = nvram_safe_get("rtu_svr_host");
-	remote_port = nvram_get_int("rtu_svr_port");
-
-	pthread_t pub_tid, sub_tid;
-    pthread_attr_t attr;
-
-    pthread_attr_init(&attr);
-    pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
-    ret = pthread_create(&pub_tid, &attr, &rtu_pub_thread_routine, NULL);
-    if (ret < 0)
-    {
-        syslog(LOG_ERR, "Create rtu_pub_thread_routine report thread failed");
-        return NULL;
-    }
-	
-	
-	while(1)
-	{
-		int     res;
-		fd_set  fdvar;
-		
-		while (m_rtu_svr_socket < 0)
-		{
-			// check ppp online
-			if (!check_wanup( ))
-			{
-				syslog(LOG_NOTICE, "RTU : Cellular Offline" );
-				sleep(3);
-				continue;
-			}      
-
-			syslog(LOG_NOTICE, "RTU : Cellular Online" );
-			
-			if (strlen(remote_host) > 0 && modbus_get_host(remote_host, ibuf))				
-			{					
-				ip = m2m_inet_addr(ibuf, strlen(ibuf));					
-			}				
-			else				
-			{					
-				syslog(LOG_ERR, "RTU : Unknown RTU Server Address");					
-				sleep(3);					
-				continue;				
-			}
-			//ip = m2m_inet_addr(remote_host, strlen(remote_host));
-			
-			syslog(LOG_NOTICE, "RTU Server Address: 0x%x", ip);
-			
-			if ((m_rtu_svr_socket = udp_socket_create(0, 9001, ip, remote_port)) < 0)
-			{
-				sleep( 2 );
-				syslog(LOG_ERR, "RTU UDP Socket Create Error, Sleep 2s ...");
-				continue;
-			}
-			else
-			{
-				syslog(LOG_NOTICE, "RTU socket: %d, %s, %d", m_rtu_svr_socket, remote_host, remote_port);
-
-			//	pkt_length = encode_rtu_login_pack(buf, sizeof(buf));
-			//	ret = udp_socket_send(m_rtu_svr_socket, buf, pkt_length);
-			//	if (ret == -1)
-			//	{
-			//		close(m_rtu_svr_socket);
-			//		m_rtu_svr_socket = -1;
-			//	}   
-			}
-		}  
-		
-		FD_ZERO(&fdvar);
-		FD_SET(m_rtu_svr_socket, &fdvar);
-
- 		testIndex++;
- 		
-		tv.tv_sec  = heartbeat_interval; //rtu_heartbeat_interval's value
-		tv.tv_usec = 0; 
-		res = select(m_rtu_svr_socket + 1, &fdvar, NULL, NULL, &tv);
-		if (res == 1)
-		{
-			process_req(m_rtu_svr_socket);
-		}
-		#if 0
-		else if (res == 0)
-		{
-			if (heartbeat_mode != NULL && strcmp(heartbeat_mode, "enable") == 0)
-			{
-				pkt_length = encode_rtu_heartbeat_pack(buf, sizeof(buf));
-				ret = udp_socket_send(m_rtu_svr_socket, buf, pkt_length);
-				if (ret == -1)
-				{
-					close(m_rtu_svr_socket);
-					m_rtu_svr_socket = -1;
-				}
-
-				m_heartbeat_ack_count++;
-
-				if (m_heartbeat_ack_count >= MAX_LOST_PACKET_NUM)
-				{
-					close(m_rtu_svr_socket);
-					m_rtu_svr_socket = -1;
-				}
-			}
-		}
-		#endif
-
-		sleep(2);
-	}
-
-	close(m_rtu_svr_socket);
-
-	return NULL;
-}
 
 
 void *send_pkt_thread_routine(void *arg)
@@ -3360,6 +3207,7 @@ int main(int argc, char *argv[])
         get_alarm_info_list( );
     }
 
+#if 0
     pthread_t pub_tid, sub_tid, pub_tid1, pub_tid2;
     pthread_attr_t attr;
 
@@ -3405,27 +3253,7 @@ int main(int argc, char *argv[])
     	DestroyQueue(m_json_event_queue);
         return -1;
     }
-
-    if (strcmp("enable", nvram_safe_get("m2m_mode")) == 0)
-    {
-      
-        pthread_attr_init(&attr);
-        pthread_attr_getstacksize(&attr, &stacksize);
-        pthread_attr_setstacksize(&attr, stacksize << 4);
-        pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
-        rc = pthread_create(&pub_tid2, &attr, &detran_rtu_routine, NULL);
-        if (rc < 0)
-        {
-            syslog(LOG_ERR, "Create pub report thread failed");
-            modbus_close(ctx_rtu);
-            modbus_free(ctx_rtu);
-            sem_destroy(&m_json_send_sem);
-            DestroyQueue(m_json_event_queue);
-            return -1;
-        }
-        
-    }
-
+#endif
     while (1)
     {
         char *nv, *nvp, *b;

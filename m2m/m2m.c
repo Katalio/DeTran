@@ -160,6 +160,7 @@ struct sockaddr_in fromaddr_r;
 struct sockaddr_in serveraddr;
 struct sockaddr_in serveraddr_r;
 
+#define MAX_RTU_PACKET_LENGTH		1024
 static int socket_fd = -1;
 #define M2M_PID_FILE "/var/run/m2m.pid"
 
@@ -424,6 +425,16 @@ static int report_udp_socket_create(unsigned long local_ip, unsigned short local
 	   connect(sockfd, (struct sockaddr*)&serveraddr_r, sizeof(serveraddr_r));
 	 */
 	return sockfd;
+}
+
+void HexToStr(const char *ibuf, unsigned char *obuf, int len)
+{
+	int i;
+
+	for (i = 0; i < len; i++)
+	{
+		sprintf(obuf + i*3, "%02x ", ibuf[i]);
+	}
 }
 
 void print_hex(char *data, int len, int op)
@@ -1056,7 +1067,8 @@ int send_file_list()
 
 	if(socket_fd >= 0)
 	{
-		fl->cmd_id = htons(REPORT_FILE_LIST);
+		//fl->cmd_id = htons(REPORT_FILE_LIST);
+		fl->cmd_id = htons(0x0014);
 		fl->packet_id = htonl(packet_id++);
 		fl->version = htons(0x0100);
 		memcpy(fl->product_id, product_id, sizeof(fl->product_id));
@@ -2435,8 +2447,8 @@ static int process_report_packet(char* pdu_ptr, int pdu_len, int socketfd)
 			r_report_status_ack=1;
 			syslog(LOG_NOTICE, "[Report] M2M Command(%02x) REPORT_STATUS_ACK!!!", ntohs(m2m_req->cmd_id));
 			break; 
-		case REPORT_DEVICE_ACK:
-			syslog(LOG_NOTICE, "[Report] M2M Command(%02x) REPORT_DEVICE_ACK!!!", ntohs(m2m_req->cmd_id));
+	//	case REPORT_DEVICE_ACK:
+	//		syslog(LOG_NOTICE, "[Report] M2M Command(%02x) REPORT_DEVICE_ACK!!!", ntohs(m2m_req->cmd_id));
 			break;
 		default:
 			syslog(LOG_NOTICE, "[Report] M2M Command(%02x) Unsupport!!!", ntohs(m2m_req->cmd_id));
@@ -2454,15 +2466,19 @@ static int process_packet(char* pdu_ptr, int pdu_len)
 	char *param_buf;
 	char ctrl_cmd_flag;
 	char ctrl_cmd[256] = {0};
-	int tlv_len = 0, res_buf_len = 0;
+	char *m2m_buf, tmp_buf[1024];
+	int len = 0, tlv_len = 0, tmp_len = 0, res_buf_len = 0;
 	int pid = -1;
 	int n;
 	int fuc_ret=1;
 	struct stat st;
+	unsigned char str[1024] = {0};
 
 	m2m_req = (M2M_PROTOCOL_HDR_T *)pdu_ptr;
 	m2m_res = (M2M_PROTOCOL_HDR_T *)m2m_res_buf;
 
+	HexToStr(pdu_ptr, str, pdu_len);
+	syslog(LOG_NOTICE, "M2M Recv: %s, len: %d", str, pdu_len);
 	syslog(LOG_DEBUG, "M2M Request: len(%02x) cmdid(%02x) pkid(%02x) ver(%02x) pid(%s)", 
 		ntohs(m2m_req->len), ntohs(m2m_req->cmd_id), ntohl(m2m_req->packet_id), ntohs(m2m_req->version), m2m_req->product_id);
 	
@@ -2665,6 +2681,7 @@ static int process_packet(char* pdu_ptr, int pdu_len)
 				g_get_file_req_ack=1;
 			}
 			break;
+#if 0
 		case FILE_LIST_GET:
 			syslog(LOG_NOTICE, "M2M Command(%02x) FILE_LIST_GET!!!", ntohs(m2m_req->cmd_id));
 			m2m_res->cmd_id = htons(FILE_LIST_GET_ACK);
@@ -2681,6 +2698,7 @@ static int process_packet(char* pdu_ptr, int pdu_len)
 		case REPORT_FILE_LIST_ACK:
 			syslog(LOG_NOTICE, "M2M Command(%02x) REPORT_FILE_LIST_ACK!!!", ntohs(m2m_req->cmd_id));
 			break;
+#endif
 		case DELETE_FILE_ACK:
 			syslog(LOG_NOTICE, "M2M Command(%02x) DELETE_FILE_ACK!!!", ntohs(m2m_req->cmd_id));
 			break;
@@ -3006,8 +3024,8 @@ static int process_packet(char* pdu_ptr, int pdu_len)
 		case DOWNLOAD_REPORT_ACK:
 			syslog(LOG_NOTICE, "M2M Command(%02x) DOWNLOAD_REPORT_ACK!!!", ntohs(m2m_req->cmd_id));
 			break;
-		case REPORT_DEVICE_ACK:
-			syslog(LOG_NOTICE, "M2M Command(%02x) REPORT_DEVICE_ACK!!!", ntohs(m2m_req->cmd_id));
+	//	case REPORT_DEVICE_ACK:
+	//		syslog(LOG_NOTICE, "M2M Command(%02x) REPORT_DEVICE_ACK!!!", ntohs(m2m_req->cmd_id));
 			break;
 		case QUERY_DEVICE_ACK:
 			syslog(LOG_NOTICE, "M2M Command(%02x) QUERY_DEVICE_ACK!!!", ntohs(m2m_req->cmd_id));
@@ -3142,6 +3160,64 @@ static int process_packet(char* pdu_ptr, int pdu_len)
 				fwrite(pdu_ptr + sizeof(M2M_PROTOCOL_HDR) +1,1,pdu_len - sizeof(M2M_PROTOCOL_HDR) -1,g_recv_file_fd);
 				g_get_file_req_ack=1;
 			}
+			break;
+		case RTU_PUB_ACK:
+			syslog(LOG_NOTICE, "M2M Command(%02x) RTU_PUB_ACK!!!", ntohs(m2m_req->cmd_id));
+			if (pdu_ptr[sizeof(M2M_PROTOCOL_HDR_T)] == 0x00)
+			{
+				syslog(LOG_NOTICE, "M2M Command(%02x): success!!!", ntohs(m2m_req->cmd_id));
+			}
+			else
+			{
+				syslog(LOG_ERR, "M2M Command(%02x): TLV error!!!", ntohs(m2m_req->cmd_id));
+			}
+			break;
+		case RTU_SCRIPT_GET_CMD:
+			syslog(LOG_NOTICE, "M2M Command(%02x) RTU_SCRIPT_GET_CMD!!!", ntohs(m2m_req->cmd_id));
+			m2m_res->cmd_id = htons(RTU_SCRIPT_GET_ACK);
+		 	m2m_buf = nvram_safe_get("rtu_scripts");
+			if ((m2m_buf == NULL) || (strlen(m2m_buf) <= 1))
+			{
+				*(m2m_res_buf + sizeof(M2M_PROTOCOL_HDR_T)) = 0x01;		//获取脚本失败
+				syslog(LOG_NOTICE, "M2M Command(%02x) Get scripts fail!!!", ntohs(m2m_req->cmd_id));
+				res_buf_len = sizeof(M2M_PROTOCOL_HDR_T) + 1;
+				m2m_res->len = htons(res_buf_len);
+				udp_socket_send(m2m_res_buf, res_buf_len);
+			}
+			else
+			{
+				*(m2m_res_buf + sizeof(M2M_PROTOCOL_HDR_T)) = 0x00;		//获取脚本成功
+				syslog(LOG_NOTICE, "M2M Command(%02x) Get scripts success!!!", ntohs(m2m_req->cmd_id));
+				len = strlen(m2m_buf);
+				memcpy(m2m_res_buf + sizeof(M2M_PROTOCOL_HDR_T) + 1, m2m_buf, len);
+				res_buf_len = sizeof(M2M_PROTOCOL_HDR_T) + 1 + len;
+				m2m_res->len = htons(res_buf_len);
+
+				memset(str, 0, 1024);
+				HexToStr(m2m_res_buf, str, res_buf_len);
+				syslog(LOG_NOTICE, "RTU_SCRIPT_GET_ACK:%s", str);
+
+				udp_socket_send(m2m_res_buf, res_buf_len);
+			}
+			break;
+		case RTU_SCRIPT_SET_CMD:
+			syslog(LOG_NOTICE, "M2M Command(%02x) RTU_SCRIPT_SET_CMD!!!", ntohs(m2m_req->cmd_id));
+			m2m_res->cmd_id = htons(RTU_SCRIPT_SET_ACK);
+			memcpy(tmp_buf, pdu_ptr + sizeof(M2M_PROTOCOL_HDR_T), pdu_len - sizeof(M2M_PROTOCOL_HDR_T));	
+			nvram_set("rtu_scripts", tmp_buf);
+			system("nvram commit");	
+			*(m2m_res_buf + sizeof(M2M_PROTOCOL_HDR_T)) = 0x00;		//设置脚本成功
+			res_buf_len = sizeof(M2M_PROTOCOL_HDR_T) + 1;
+			m2m_res->len = htons(res_buf_len);
+
+			memset(str, 0, 1024);
+			HexToStr(m2m_res_buf, str, res_buf_len);
+			syslog(LOG_NOTICE, "RTU_SCRIPT_SET_ACK:%s", str);
+
+			udp_socket_send(m2m_res_buf, res_buf_len);
+			m2m_send_cmd(M2M_LOGOUT);
+			syslog(LOG_NOTICE, "RTU scripts set reboot!!");
+			reboot(RB_AUTOBOOT);
 			break;
 		default:
 			syslog(LOG_NOTICE, "M2M Command(%02x) Unsupport!!!", ntohs(m2m_req->cmd_id));
@@ -3861,6 +3937,180 @@ void report_status_alone(void *param)
 			process_report_Req(fd,svrip);
 		}
 	}  
+}
+
+int encode_rtu_pub_pack(unsigned char *buf, int buf_len)
+{
+	M2M_PROTOCOL_HDR_T *cmd = (M2M_PROTOCOL_HDR_T *)buf;
+	char *nv, *nvp, *b;
+    int n;
+    char slaveid_nv_name[32] = {0};
+    char regAddr_nv_name[32] = {0};
+    char val_nv_name[32] = {0};
+    char valtype_nv_name[32] = {0};
+	M2M_PROTOCOL_TLV *tlv = NULL;
+	unsigned int length, tlv_len;
+	unsigned short regAddr = 0;
+	char outBuf[12] = {0};
+    int valueType = 0;
+    unsigned short startAddr = 0;
+    unsigned short naddr = 0;
+	int i;
+
+    memset(buf, 0, buf_len);
+	cmd->cmd_id = htons(RTU_PUB_CMD);
+	cmd->packet_id = htonl(packet_id++);
+	cmd->version = htons(0x0300);
+	cmd->safe_flag = 0;		//安全标识:1启用, 0不启用
+	cmd->type = 0;	//0: M2M指令，1: Lora指令
+	memcpy(cmd->product_id, product_id, sizeof(cmd->product_id)); 
+	length = sizeof(M2M_PROTOCOL_HDR_T);
+
+	nvp = nv = strdup(nvram_safe_get("rtu_signalinfo_list"));
+    if (!nv)
+    {
+        return -1;
+    }
+
+	//encode tlvs
+    while ((b = strsep(&nvp, ">")) != NULL)
+    {
+        char *signalid = NULL, *signalname = NULL, *valtype = NULL, *maxval = NULL, *minval = NULL, *ctrlable = NULL, *oper = NULL;
+       	char *slvid_value = NULL, *regAddr_value = NULL, *val_value = NULL;
+       	
+        n = vstrsep(b, "<", &signalid, &signalname, &valtype, &maxval, &minval, &ctrlable, &oper);
+        if (n < 7)
+        {
+            continue ;
+        }
+
+        snprintf(slaveid_nv_name, sizeof(slaveid_nv_name) - 1, "slaveid_%s", signalid);		//设备地址
+        snprintf(regAddr_nv_name, sizeof(regAddr_nv_name) - 1, "regAddr_%s", signalid);		//寄存器地址
+        snprintf(val_nv_name, sizeof(val_nv_name) - 1, "rtuval_%s", signalid);				//传感器的值
+        snprintf(valtype_nv_name, sizeof(valtype_nv_name) - 1, "valueType_%s", signalid);
+
+		slvid_value = nvram_safe_get(slaveid_nv_name);
+		regAddr_value = nvram_safe_get(regAddr_nv_name);
+		val_value = nvram_safe_get(val_nv_name);
+        valueType = nvram_get_int(valtype_nv_name);
+
+		memset(outBuf, 0, sizeof(outBuf));
+		
+        if (slvid_value == NULL || regAddr_value == NULL || val_value  == NULL)
+        {
+            continue ;
+        }
+
+        startAddr = (unsigned short)atoi(nvram_safe_get(regAddr_nv_name));
+        naddr = htons(startAddr);
+
+        n = String2Bytes(val_value, outBuf, strlen(val_value));
+        if (n != 4 && n != 2)
+        {
+            syslog(LOG_NOTICE, "----RTU Pub Function, get reg value failed ,skipped ----");
+            continue ;
+        }
+        
+		tlv = (M2M_PROTOCOL_TLV *)(buf + length);
+
+		memset(tlv, 0, sizeof(tlv));
+		tlv_len = 0;
+
+		tlv->tlv_tag = htons(TAG_COLL_DATA);
+		*(tlv->tlv_value + tlv_len) = 0x01;	//数据采集
+		tlv_len += 1;
+		*(tlv->tlv_value + tlv_len) = (unsigned char)atoi(slvid_value);
+		tlv_len += 1;
+		memcpy(tlv->tlv_value + tlv_len, &naddr, 2);
+		tlv_len += 2;
+		memcpy(tlv->tlv_value + tlv_len, outBuf, n);
+		tlv_len += n;
+		
+		tlv->tlv_len = htons(tlv_len);
+		//print_hex(buf + length, tlv_len, 1);
+        length += (tlv_len + 4);
+    }
+    free(nv);
+
+	cmd->len = htons(length);
+	//print_hex(buf, length, 1);
+
+    syslog(LOG_NOTICE, "Publish Packet data ok!");
+	//unsigned char str[1024] = {0};
+	//HexToStr(buf, str, length);
+    //syslog(LOG_NOTICE, "Publish Data:%s, len:%d", str, length);
+
+	return length;
+}
+
+void *rtu_pub_thread_routine(void *arg)
+{
+	unsigned char buf[MAX_RTU_PACKET_LENGTH] = {0};
+	int pkt_length;
+	int ret;
+	unsigned int pub_interval = nvram_get_int("rtu_pub_interval");
+
+	
+	if (pub_interval < 5)
+	{
+		pub_interval = 5;	
+	}
+	
+	while (1)
+	{
+		sleep(pub_interval);
+
+		if (socket_fd < 0)
+		{
+			continue ;
+		}
+		pkt_length = encode_rtu_pub_pack(buf, sizeof(buf));
+		ret = udp_socket_send(buf, pkt_length);
+		if (ret == -1)
+		{
+			close(socket_fd);
+			socket_fd = -1;
+		}
+	}
+
+    return NULL;
+}
+
+void *detran_rtu_routine(void *arg)
+{
+#define MAX_LOST_PACKET_NUM		5
+	char ibuf[21] = {0};
+	unsigned char mac[6] = {0};
+	unsigned long ip = 0;
+	struct timeval  tv;
+	char *remote_host = NULL;
+	unsigned int remote_port;
+	unsigned char buf[MAX_RTU_PACKET_LENGTH] = {0};
+	int pkt_length;
+	int ret;
+	int testIndex = 0;
+	int heartbeat_interval = nvram_get_int("m2m_heartbeat_intval");
+	char *heartbeat_mode = nvram_safe_get("rtu_heartbeat_mode");
+	
+	if (heartbeat_interval < 3)
+	{
+		heartbeat_interval = 3;
+	}
+	
+	remote_host = nvram_safe_get("rtu_svr_host");
+	remote_port = nvram_get_int("rtu_svr_port");
+
+	pthread_t pub_tid, sub_tid;
+    pthread_attr_t attr;
+
+    pthread_attr_init(&attr);
+    pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
+    ret = pthread_create(&pub_tid, &attr, &rtu_pub_thread_routine, NULL);
+    if (ret < 0)
+    {
+        syslog(LOG_ERR, "Create rtu_pub_thread_routine report thread failed");
+        return NULL;
+    }
 }
 
 void heartbeat_thread(void *param)
@@ -4596,8 +4846,11 @@ int m2m_main(int argc, char *argv[])
 	unsigned char mac[6] = {0};
 	unsigned long ip = 0;
 	struct timeval  tv;
-	pthread_t heart_beat_id,external_id,report_url_id,report_status_alone_id;
+	pthread_t pub_tid, heart_beat_id,external_id,report_url_id,report_status_alone_id;
 	pthread_t sf_box;
+    pthread_attr_t attr;
+    size_t stacksize;
+	int rc;
 	
 	m2m_deamon();
 	m2m_config_init();
@@ -4633,7 +4886,6 @@ int m2m_main(int argc, char *argv[])
 	}
 	else
 	{
-		
 		if (!strcmp(nvram_safe_get("m2m_background_mode"), "enable"))
 		{
 			if(strcmp(nvram_safe_get("m2m_server_domain"),"detran.xicp.net") && strcmp(nvram_safe_get("m2m_server_domain"),"120.78.189.220"))
@@ -4745,6 +4997,21 @@ int m2m_main(int argc, char *argv[])
 			syslog(LOG_NOTICE, "M2M URL Thread %d", report_url_id);
 		}
 	}
+
+    if (strcmp("enable", nvram_safe_get("m2m_mode")) == 0)
+    {
+        pthread_attr_init(&attr);
+        pthread_attr_getstacksize(&attr, &stacksize);
+        pthread_attr_setstacksize(&attr, stacksize << 4);
+        pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
+        rc = pthread_create(&pub_tid, &attr, &detran_rtu_routine, NULL);
+        if (rc < 0)
+        {
+            syslog(LOG_ERR, "Create pub report thread failed");
+            return -1;
+        }
+    }
+
     #ifdef TCONFIG_N2N
 	if (nvram_get_int("n2n_bootmode") == 0)
 	{
