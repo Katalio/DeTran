@@ -793,6 +793,8 @@ int data_package(unsigned char *buff, int len)
         strncat(buff, data_usage_buff, len);    //改：添加
     }
 
+	strncat(buff, "\\n", 2);
+	
     return strlen(buff);
 }
 
