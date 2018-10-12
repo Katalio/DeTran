@@ -35,6 +35,14 @@ CLOUD_CHECKBOX_NVRAM netInfo[] =
     {1, "wan_up", wan_status},
     {1, "", router_connection_uptime}//Connection uptime
 };
+CLOUD_CHECKBOX_NVRAM gpsInfo[] = 
+{
+	{0, "gps_valid", NULL},
+	{0, "gps_bds", NULL},
+	{0, "gps_use", NULL},
+	{1, "", gps_time},
+	{1, "", gps_position}
+};
 CLOUD_CHECKBOX_NVRAM dataUsage[] =
 {
     {1, "", router_access_lan_device},
@@ -42,6 +50,42 @@ CLOUD_CHECKBOX_NVRAM dataUsage[] =
     {1, "", get_all_vpn_connect},
     {1, "", router_total_data_translate}
 };
+
+int gps_time(unsigned char *buff, int length)
+{
+	int len = 0;
+
+	if(buff == NULL)
+	{
+		return len;
+	}
+
+	snprintf(buff, length, "%s - %s", nvram_safe_get("gps_date"), nvram_safe_get("gps_time"));
+
+	len = strlen(buff);
+
+	return len;
+}
+
+int gps_position(unsigned char *buff, int length)
+{
+	int len = 0;
+	char latitude[64] = {0}, longitude[64] = {0};
+	
+	if(buff == NULL)
+	{
+		return len;
+	}
+
+	snprintf(latitude, length, "%s%s", nvram_safe_get("gps_latitude"), nvram_safe_get("gps_NS"));
+	snprintf(longitude, length, "%s%s", nvram_safe_get("gps_longitude"), nvram_safe_get("gps_EW"));
+	
+	snprintf(buff, length, "%s - %s", latitude, longitude);
+
+	len = strlen(buff);
+
+	return len;
+}
 
 int connect_status(unsigned char *buff, int length)
 {
@@ -723,6 +767,10 @@ int package_formate_data(int type, unsigned char *buf, int len)
             snprintf(buf, len, "n=>'");
             info = netInfo;
             break;
+		case GPS_INFO:
+			snprintf(buf, len, "g=>'");
+			info = gpsInfo;
+			break;
         case DATA_USAGE:
             get_wifi_client();
             snprintf(buf, len, "d=>'");
@@ -770,7 +818,7 @@ int package_formate_data(int type, unsigned char *buf, int len)
 int data_package(unsigned char *buff, int len)
 {
     unsigned char tmp[128] = {0};
-    unsigned char netinfo_buff[1024] = {0}, data_usage_buff[1024] = {0}, sysinfo_buff[1024] = {0};
+    unsigned char netinfo_buff[1024] = {0}, data_usage_buff[1024] = {0}, sysinfo_buff[1024] = {0}, gpsinfo_buff[1024] = {0};
     int ret;
 
     snprintf(buff, len, "i=>'%s,%s,%s'",nvram_safe_get("modem_imei"), nvram_safe_get("cloud_account_id"),nvram_safe_get("cloud_heartbeat_intval"));
@@ -778,19 +826,25 @@ int data_package(unsigned char *buff, int len)
     {
         package_formate_data(SYS_INFO, sysinfo_buff, sizeof(sysinfo_buff));
         strncat(buff, "|", 1);
-        strncat(buff, sysinfo_buff, len);   //改：添加
+        strncat(buff, sysinfo_buff, len);   
     }
-    if(nvram_match("net_information_on_cbox", "1"))
+	if(nvram_match("net_information_on_cbox", "1"))
     {
         package_formate_data(NET_INFO, netinfo_buff, sizeof(netinfo_buff));
         strncat(buff, "|", 1);
-        strncat(buff, netinfo_buff, len);   //改：添加
+        strncat(buff, netinfo_buff, len);   
+    }
+	if(nvram_match("gps_information_on_cbox", "1"))
+    {
+        package_formate_data(GPS_INFO, gpsinfo_buff, sizeof(gpsinfo_buff));
+        strncat(buff, "|", 1);
+        strncat(buff, gpsinfo_buff, len);   
     }
     if(nvram_match("data_usage_on_cbox", "1"))
     {
         package_formate_data(DATA_USAGE, data_usage_buff, sizeof(data_usage_buff));
         strncat(buff, "|", 1);
-        strncat(buff, data_usage_buff, len);    //改：添加
+        strncat(buff, data_usage_buff, len);    
     }
 
 	strncat(buff, "\\n", 2);

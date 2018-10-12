@@ -36,6 +36,7 @@
 #define DATA_USAGE 4
 #define SYS_INFO 6
 #define NET_INFO 15
+#define GPS_INFO 5
 
 #define SEND 1
 #define RECV 0
@@ -95,5 +96,7 @@ static int wan_status(unsigned char *buff, int length);
 static int sim_status(unsigned char *buff, int length);
 static int modem_status(unsigned char *buff, int length);
 static int connect_status(unsigned char *buff, int length);
+static int gps_time(unsigned char *buff, int length);
+static int gps_position(unsigned char *buff, int length);
 
 #endif //end __CLOUDAXS_H__
