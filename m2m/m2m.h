@@ -31,13 +31,17 @@
 #include <linux/if_ether.h>
 #include <net/if.h>
 #include <netpacket/packet.h>
+#include <ctype.h>
+
+
 
 #pragma pack(1)
 
-#define FTP_FILE_TMP "tmp.trx"
+#define FTP_FILE_TMP_PATH "/tmp/"
 #define UDP_MAX_SEND_COUNT 1
 #define SEND 1
 #define RECV 0
+#define M2M_PID_FILE "/var/run/m2m.pid"
 
 typedef struct _M2M_CONFIG
 {
@@ -52,10 +56,62 @@ typedef struct _M2M_CONFIG
 	int heartbeat_intval;
 }M2M_CONFIG;
 
-#define M2M_HEAD_LEN 26
-#define M2M_TLV_VALUE 1024
+#define M2M_HEAD_LEN 28
+#define M2M_TLV_VALUE 7168
 #define M2M_REQ_PDU_BUF 4500
-#define M2M_RES_PDU_BUF 4500
+#define M2M_RES_PDU_BUF 8192
+#define SN_LENGTH 16
+#define BUF_LEN  2048
+#define M2M_VERSION 0x0300
+#define TCP_UPLOAD_DOWNLOAD_LEN 4096
+#define UDP_UPLOAD_DOWNLOAD_LEN 2048
+
+#define MODEM_SN_TAG 0x0001 //模块序号
+#define MODEM_IMEI_TAG 0x0002 //IMEI
+#define MODEM_TYPE_TAG 0x0003 //模块型号
+#define MODEM_PRODUCT_TAG 0x0004 //模块生产厂家
+#define SIM_SN_TAG  0x0005 //SIM卡序号
+#define MODEM_IMSI_TAG 0x0006 //IMSI
+#define MODEM_ICCID_TAG   0x0007 //ICCID
+#define SIM_NUM_TAG 0x0008 //SIM卡号
+#define OPERATOR_NAME_TAG 0x0009 //运营商名称
+#define NETWORK_MODE_TAG  0x000A //网络模式
+#define NETWORK_FRAME_TAG 0x000B //网络频段
+#define DEVICE_TYPE_TAG   0x000C //设备制式
+#define FIRMWARE_TAG   0x000D //软件版本号
+#define TACH_FIRMWARE_TAG 0x000E //附属软件版本号
+#define DEVICE_NETWORK_TAG   0x000F //设备型号
+#define DEVICE_RENAME_TAG 0x0010 //设备别名
+#define DEVICE_PRODUCT_SN_TAG   0x0011 //设备出厂产品序号,贴在设备背后的条码
+#define BASE_STATION1_MNC_TAG   0x0012 //基站1 mnc
+#define BASE_STATION1_LAC_TAG   0x0013 //基站1 lac
+#define BASE_STATION1_CELLID_TAG   0x0014 //基站1 cellid
+#define BASE_STATION2_MNC_TAG   0x0015 //基站2 mnc
+#define BASE_STATION2_LAC_TAG   0x0016 //基站2 lac
+#define BASE_STATION2_CELLID_TAG   0x0017 //基站2 cellid
+#define BASE_STATION3_MNC_TAG   0x0018 //基站3 mnc
+#define BASE_STATION3_LAC_TAG   0x0019 //基站3 lac
+#define BASE_STATION3_CELLID_TAG   0x001A //基站3 cellid
+#define WIFI_AP_LIST_TAG  0x001B //Wifi AP列表
+#define HOST_SN_TAG 0x001C //宿主机host SN
+#define USER_CONFIG1_TAG  0x001D //用户配置信息1
+#define USER_CONFIG2_TAG  0x001E //用户配置信息2
+#define USER_CONFIG3_TAG  0x002F //用户配置信息3
+#define SERIAL_STATUS_REPORT_TAG   0x0020 //串口状态上报
+#define LAN_STATUS_REPORT_TAG   0x0021 //以太网(LAN)口状态
+#define USB_STATUS_REPORT_TAG   0x0022 //USB口状态
+#define RELAY_STATUS_TAG  0x0023 //外接继电器状态
+#define CPU_TAG  0x0024 //CPU使用率
+#define MEMORY_TAG  0x0025 //内存使用率
+#define FLASH_TAG   0x0026 //内部存储使用率
+#define DISK_TAG 0x0027 //扩展存储使用率
+#define CHIP_TEMPRETURE_TAG  0x0028 //芯片温度
+#define BATTERY_VAL_TAG   0x0029 //电池电压
+#define BACKUP_BATTERY_VAL_TAG  0x002A //备用电池电压
+#define PUBLISH_DATA_TLV_CMD 0x0130
+#define PUBLISH_TIME_TLV_CMD 0x0131
+
+#define SERIAL  "/dev/ttyS0"
 
 typedef struct _M2M_PROTOCOL_HDR
 {
@@ -63,32 +119,48 @@ typedef struct _M2M_PROTOCOL_HDR
 	unsigned short cmd_id;	//80 05
 	unsigned int packet_id;	//00 00 00 01
 	unsigned short version;	//01 00
-	char product_id[24];		//31 38 39 31 32 33 34 35 36 37 38 00 00 00 00 00
+	unsigned char safe_flag;
+   unsigned char data_type;//0 is for router, 1 is for lora
+	char product_id[SN_LENGTH];		//31 38 39 31 32 33 34 35 36 37 38 00 00 00 00 00
 }M2M_PROTOCOL_HDR;
 
-typedef struct _M2M_PROTOCOL_HDR_T
+typedef struct _M2M_PROTOCOL_DOWNLOAD_PARAM
 {
-	unsigned short len;
-	unsigned short cmd_id;
-	unsigned int packet_id;
-	unsigned short version;
-	unsigned char safe_flag;
-	unsigned char type;
-	char product_id[16];
-} M2M_PROTOCOL_HDR_T;
+   char protocol;
+   char file_number;
+   char file_type;
+   char unused;
+}M2M_PROTOCOL_DOWNLOAD_PARAM;
+
+typedef struct _M2M_PROTOCOL_DOWNLOAD_FILE
+{
+   int file_len;
+   int file_id;
+   char file_name[64];
+   char file_md5[32];
+}M2M_PROTOCOL_DOWNLOAD_FILE;
+
+typedef struct _M2M_PROTOCOL_FILE_REQ
+{
+   int file_id;
+   int offset;
+   int req_len;
+   int task_id;
+}M2M_PROTOCOL_FILE_REQ;
 
 typedef struct _M2M_PROTOCOL_TLV
 {
 	unsigned short tlv_tag;		//00 00
 	unsigned short tlv_len;		//00 0B
-	char tlv_value[1024];		//61 3D 31 30 30 26 62 3D 32 30 30 //a=100&b=200
+	char tlv_value[M2M_TLV_VALUE];		//61 3D 31 30 30 26 62 3D 32 30 30 //a=100&b=200
 }M2M_PROTOCOL_TLV;
 
-typedef struct _M2M_LOGIN_NVRAM
+typedef struct _RTU_PUBLISH_DATA
 {
-	unsigned short tag_id;
-	char *name;
-} M2M_LOGIN_NVRAM;
+   unsigned char data_type;//00: 系统数据 01: 采集数据 02:告警数据
+   unsigned char slave_id;
+   unsigned short regaddr;
+}RTU_PUBLISH_DATA;
 
 typedef struct _DOWNLOAD_REPORT_HEAD
 {
@@ -121,17 +193,16 @@ typedef struct _ST_FILE_REQ
 	unsigned int cmd_sn;
 }ST_FILE_REQ;
 
-
 #define M2M_UDP	1
 #define M2M_TCP	2
 #define M2M_FTP	3
-typedef struct _ST_DOWNLOAD_INFO_EX
+typedef struct _ST_DOWNLOAD_INFO
 {
 	unsigned char type;
 	unsigned char filecount;
 	unsigned short reserve;
 	FILE_INFO filelist[];
-}ST_DOWNLOAD_INFO_EX;
+}ST_DOWNLOAD_INFO;
 
 typedef struct _ST_PACKET_CAP
 {
@@ -144,8 +215,9 @@ typedef struct _ST_PACKET_CAP
 typedef struct _ST_PACKET_CAP_UPLOAD
 {
 	unsigned int  	id;
-	unsigned short	total;
-	unsigned short	current;
+   unsigned int offset;
+	unsigned int	total;
+   unsigned char md5[32];
 }ST_PACKET_CAP_UPLOAD;
 
 
@@ -170,6 +242,9 @@ typedef struct _ST_PACKET_CAP_UPLOAD
 #define M2M_REGISTER			0x0008
 #define M2M_REGISTER_ACK		0x8008
 
+#define REPORT_STATUS			0x0009
+#define REPORT_STATUS_ACK		0x8009
+
 #define M2M_CONFIG_REQ			0x000A
 #define M2M_CONFIG_REQ_ACK	0x800A
 
@@ -179,38 +254,38 @@ typedef struct _ST_PACKET_CAP_UPLOAD
 #define DOWNLOAD_INFO			0x000C
 #define DOWNLOAD_INFO_ACK		0x800C
 
-#define DOWNLOAD_AD			0x000E
-#define DOWNLOAD_AD_ACK		0x800E
+#define FILE_REQ           0x000D
+#define FILE_REQ_ACK           0x800D
+
+#define UPLOAD_FILE			0x000E
+#define UPLOAD_FILE_ACK		0x800E
 
 #define DOWNLOAD_REPORT			0x000F
 #define DOWNLOAD_REPORT_ACK		0x800F
 
-//#define REPORT_DEVICE			0x0010
-//#define REPORT_DEVICE_ACK		0x8010
+#define RTU_PUBLISH			0x0010
+#define RTU_PUBLISH_ACK		0x8010
 
-#define REMOTE_DEVICE_CTRL 		0x0011
-#define REMOTE_DEVICE_CTRL_ACK	0x8011
+#define RTU_SUB 		0x0011
+#define RTU_SUB_ACK	0x8011
 
-#define REPORT_URL				0x0012
-#define REPORT_URL_ACK			0x8012
+#define OUTPUT_CNTL				0x0012
+#define OUTPUT_CNTL_ACK			0x8012
 
-//#define FILE_LIST_GET			0x0013
-//#define FILE_LIST_GET_ACK		0x8013
+#define RTU_SCRIPT_GET			0x0013
+#define RTU_SCRIPT_GET_ACK		0x8013
 
-//#define REPORT_FILE_LIST		0x0014
-//#define REPORT_FILE_LIST_ACK	0x8014
+#define RTU_SCRIPT_SET		0x0014
+#define RTU_SCRIPT_SET_ACK	0x8014
 
-#define DELETE_FILE				0x0015
-#define DELETE_FILE_ACK			0x8015
+#define RTU_SCRIPT_TRAP				0x0015
+#define RTU_SCRIPT_TRAP_ACK			0x8015
 
 #define DOWNLOAD_CFG_FILE		0x0016
 #define DOWNLOAD_CFG_FILE_ACK	0x8016
 
 #define DOWNLOAD_INFO_EX		0x0019
 #define DOWNLOAD_INFO_EX_ACK	0x8019
-
-#define FILE_REQ				0x0020
-#define FILE_REQ_ACK			0x8020
 
 #define PACKET_CAP				0x0021
 #define PACKET_CAP_ACK			0x8021
@@ -224,8 +299,7 @@ typedef struct _ST_PACKET_CAP_UPLOAD
 #define CFG_FILE_REQ			0x0024
 #define CFG_FILE_REQ_ACK		0x8024
 
-#define REPORT_STATUS			0x0025
-#define REPORT_STATUS_ACK		0x8025
+
 
 #define QUERY_DEVICE			0x0026
 #define QUERY_DEVICE_ACK		0x8026
@@ -292,23 +366,6 @@ typedef struct _ST_PACKET_CAP_UPLOAD
 #define M2M_TCP_FILE_PUT			0x0006
 #define M2M_TCP_FILE_PUT_ACK		0x8006
 
-#define RTU_PUB_CMD					0x0010
-#define RTU_PUB_ACK					0x8010
-#define RTU_SCRIPT_GET_CMD			0x0013
-#define RTU_SCRIPT_GET_ACK			0x8013
-#define RTU_SCRIPT_SET_CMD			0x0014
-#define RTU_SCRIPT_SET_ACK			0x8014
-
-/* TAG INFORMATION */
-#define TAG_COLL_DATA 				0x0130
-#define TAG_COLL_TIME 				0x0131
-#define TAG_ALARM_CMD 				0x0132
-#define TAG_INQUIRE_DATA			0x0133
-#define TAG_DEVICE_TYPE				0x000F
-#define TAG_DEVICE_SN				0x0011
-#define TAG_OS_VERSION				0x000D
-#define TAG_NULL					0xFFFF
-
 typedef struct _M2M_TCP_HDR
 {
 	unsigned short prefix;
@@ -338,6 +395,44 @@ typedef struct _json{
 	char *buf;
 	int elm_count;
 }json;
+
+typedef struct serialHead{
+	unsigned char serHead;
+	unsigned char type;
+	unsigned short length;
+}SERIALHEAD;
+
+typedef struct serialTail{
+	unsigned char check;
+	unsigned char tail;
+}SERIALTAIL;
+
+typedef struct snNode{
+	struct snNode *next;
+	unsigned char sn[SN_LENGTH];
+	unsigned char report;//the flag indicate whether the sn is reported to server
+}SNNODE;
+
+typedef struct serial_config
+{
+    int rate;
+    char parity;
+    char databits;
+    char stopbits;
+    char streamcontrol;
+} SERIAL_CONFIG_T;
+
+typedef struct baudmap
+{
+	unsigned int	 baud;
+	unsigned int	 flag;
+}baudmap_t;
+
+typedef struct baudmap_struct
+{
+	unsigned int baud;
+	unsigned int flag;
+}baudmap_st;
 
 /*
 
