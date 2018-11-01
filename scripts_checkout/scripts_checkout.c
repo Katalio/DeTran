@@ -868,12 +868,25 @@ int scripts_checkout(const char *scripts)
 				}
 				if(!strcmp(cmds, "VARS"))
 				{
-					if(strchr(var_name_b, '[') == NULL)
+					len = 0;
+					for(i = 0; i < strlen(var_name_b); i ++)
+					{
+						if(*(var_name_b + i) == '[')
+							len += 1;		
+					}
+					if(len == 0)
 					{
 						memset(error_msg_buf, 0, ERROR_MSG_LENGTH);
 						snprintf(error_msg_buf, ERROR_MSG_LENGTH, "\"expected '[]' for 'VARS'\"");
 						set_Msg_to_errInfo(LINENUM, ERR_DEFVAR_CONFUSING, error_msg_buf);
 						error_code |= ERR_DEFVAR_CONFUSING;	
+					}
+					else if(len > 1)
+					{
+						memset(error_msg_buf, 0, ERROR_MSG_LENGTH);
+						snprintf(error_msg_buf, ERROR_MSG_LENGTH, "\"V20 only support one-demensional array\"");
+						set_Msg_to_errInfo(LINENUM, ERR_FORMAT, error_msg_buf);
+						error_code |= ERR_FORMAT;	
 					}
 					//若变量为AI或DI，检查寄存器定义是否越界
 					if(aidi_reg_check(var_name, var_count))
@@ -975,12 +988,25 @@ int scripts_checkout(const char *scripts)
 				}
 				if(!strcmp(cmds, "INTFS"))
 				{
-					if(strchr(var_name_b, '[') == NULL)
+					len = 0;
+					for(i = 0; i < strlen(var_name_b); i ++)
+					{
+						if(*(var_name_b + i) == '[')
+							len += 1;		
+					}
+					if(len == 0)
 					{
 						memset(error_msg_buf, 0, ERROR_MSG_LENGTH);
-						snprintf(error_msg_buf, ERROR_MSG_LENGTH, "\"expected '[]' for 'INTFS'\"");
+						snprintf(error_msg_buf, ERROR_MSG_LENGTH, "\"expected '[]' for 'VARS'\"");
 						set_Msg_to_errInfo(LINENUM, ERR_DEFVAR_CONFUSING, error_msg_buf);
 						error_code |= ERR_DEFVAR_CONFUSING;	
+					}
+					else if(len > 1)
+					{
+						memset(error_msg_buf, 0, ERROR_MSG_LENGTH);
+						snprintf(error_msg_buf, ERROR_MSG_LENGTH, "\"V20 only support one-demensional array\"");
+						set_Msg_to_errInfo(LINENUM, ERR_FORMAT, error_msg_buf);
+						error_code |= ERR_FORMAT;	
 					}
 					//若变量为AI或DI，检查寄存器定义是否越界
 					if(aidi_reg_check(var_name, var_count))
@@ -1077,13 +1103,27 @@ int scripts_checkout(const char *scripts)
 				}
 				if(!strcmp(cmds, "CTRLS"))
 				{
-					if(strchr(var_name_b, '[') == NULL)
+					len = 0;
+					for(i = 0; i < strlen(var_name_b); i ++)
+					{
+						if(*(var_name_b + i) == '[')
+							len += 1;		
+					}
+					if(len == 0)
 					{
 						memset(error_msg_buf, 0, ERROR_MSG_LENGTH);
-						snprintf(error_msg_buf, ERROR_MSG_LENGTH, "\"expected '[]' for 'CTRLS'\"");
+						snprintf(error_msg_buf, ERROR_MSG_LENGTH, "\"expected '[]' for 'VARS'\"");
 						set_Msg_to_errInfo(LINENUM, ERR_DEFVAR_CONFUSING, error_msg_buf);
 						error_code |= ERR_DEFVAR_CONFUSING;	
 					}
+					else if(len > 1)
+					{
+						memset(error_msg_buf, 0, ERROR_MSG_LENGTH);
+						snprintf(error_msg_buf, ERROR_MSG_LENGTH, "\"V20 only support one-demensional array\"");
+						set_Msg_to_errInfo(LINENUM, ERR_FORMAT, error_msg_buf);
+						error_code |= ERR_FORMAT;	
+					}
+
 					if(strchr(line, '='))
 					{
 						memset(error_msg_buf, 0, ERROR_MSG_LENGTH);
@@ -1168,13 +1208,27 @@ int scripts_checkout(const char *scripts)
 				}
 				if(!strcmp(cmds, "UCTRLS"))
 				{
-					if(strchr(var_name_b, '[') == NULL)
+					len = 0;
+					for(i = 0; i < strlen(var_name_b); i ++)
+					{
+						if(*(var_name_b + i) == '[')
+							len += 1;		
+					}
+					if(len == 0)
 					{
 						memset(error_msg_buf, 0, ERROR_MSG_LENGTH);
-						snprintf(error_msg_buf, ERROR_MSG_LENGTH, "\"expected '[]' for 'UCTRLS'\"");
+						snprintf(error_msg_buf, ERROR_MSG_LENGTH, "\"expected '[]' for 'VARS'\"");
 						set_Msg_to_errInfo(LINENUM, ERR_DEFVAR_CONFUSING, error_msg_buf);
 						error_code |= ERR_DEFVAR_CONFUSING;	
 					}
+					else if(len > 1)
+					{
+						memset(error_msg_buf, 0, ERROR_MSG_LENGTH);
+						snprintf(error_msg_buf, ERROR_MSG_LENGTH, "\"V20 only support one-demensional array\"");
+						set_Msg_to_errInfo(LINENUM, ERR_FORMAT, error_msg_buf);
+						error_code |= ERR_FORMAT;	
+					}
+
 					if(strchr(line, '='))
 					{
 						memset(error_msg_buf, 0, ERROR_MSG_LENGTH);
@@ -1795,7 +1849,7 @@ void show_cmdInfo(void)
 int main()
 {
 	int error_code = 0;
-	char *scripts = "  VARS 	 W 	 AI[12]	;	\n"\
+	char *scripts = "  VARS 	 W 	 AI[12];	\n"\
 					"	VARS B DI[3];\n"\
 					"VAR F tmp;\n"\
 					"\n"\
