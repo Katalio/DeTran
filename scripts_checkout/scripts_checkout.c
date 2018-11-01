@@ -704,6 +704,9 @@ int brackets_exist_check(char *str)	//only for IF
 		q ++;
 	}
 
+	if((brackets_count == 0) && (symbols_count == 0))
+		return 3;
+
 	if(brackets_count == symbols_count)
 		return 0;
 	else if(brackets_count < symbols_count) 
@@ -763,10 +766,10 @@ int scripts_checkout(const char *scripts)
 {
 	int error_code = 0;
 	char line[LINE_SIZE];
-	int i, j, n;
-	char *p, *nv, *nvp, *cp;
+	int i, j, n, len;
+	char *p, *nv, *nvp, *cp, *cq;
 	char *cmd, *regAddr, *var_type, *var_name_b;
-	char var_name[16];
+	char var_name[16], tmp_name[16];
 	unsigned int var_count = 0;	//元素的个数，针对数组变量来说，单个变量为1
 	char *start_num, *read_count;	//读入寄存器的开始编号及个数
 	char *modbus_cmd, *overtime;
@@ -1211,7 +1214,7 @@ int scripts_checkout(const char *scripts)
 					if(var_count <= 0)
 					{
 						memset(error_msg_buf, 0, ERROR_MSG_LENGTH);
-						snprintf(error_msg_buf, ERROR_MSG_LENGTH, "\"invalid element subscript '%s'\"", var_name);
+						snprintf(error_msg_buf, ERROR_MSG_LENGTH, "\"invalid element subscript for '%s'\"", var_name);
 						set_Msg_to_errInfo(LINENUM, ERR_PARAM_EXCESS, error_msg_buf);
 						error_code |= ERR_PARAM_EXCESS;
 					}
@@ -1249,23 +1252,60 @@ int scripts_checkout(const char *scripts)
 		}
 		else if(!strcmp(cmds, "CAL"))
 		{
-			memset(var_name, 0, 16);
-			n = vstrsep(nvp, " =	", &cmd, &var_name_b);
-
-			var_count = get_varname(var_name, var_name_b);
-			//检查变量是否定义
-			if(params_undefined_check(var_name))
+			cp = strchr(line, ' ');
+			while(1)
 			{
-				error_code |= ERR_PARAM_UNDEFINED;	
-			}
-			else
-			{
-				if(var_count <= 0)
+				memset(var_name, 0, 16);
+				memset(tmp_name, 0, 16);
+				len = 0;
+				while((isspace((int) *cp) || *cp == '	' || *cp == '=' || *cp == '+' || *cp == '-' || *cp == '*' || *cp == '/'\
+					|| *cp == '~' || *cp == '&' || *cp == '|' || *cp == '^' || *cp == '<' || *cp == '>') && (*cp != '\0'))
 				{
-					memset(error_msg_buf, 0, ERROR_MSG_LENGTH);
-					snprintf(error_msg_buf, ERROR_MSG_LENGTH, "\"invalid element subscript '%s'\"", var_name);
-					set_Msg_to_errInfo(LINENUM, ERR_PARAM_EXCESS, error_msg_buf);
-					error_code |= ERR_PARAM_EXCESS;
+					cp ++;
+				}
+				cq = cp;
+				if(*cp == '\0' || *cp == ';' || *cp == '\n')
+				{
+					break;
+				}
+				else
+				{
+					while(((!isspace((int) *cp)) && (*cp != '	') && (*cp != '+') && (*cp != '-') && (*cp != '*') && (*cp != '/')\
+						&& (*cp != '~') && (*cp != '&') && (*cp != '|') && (*cp != '^')\
+						&& (*cp != '<') && (*cp != '>') && (*cp != '\r') && (*cp != ';')) && (*cp != '\0'))
+					{
+						cp ++;
+						len ++;
+					}
+					strncpy(tmp_name, cq, len);
+
+					if((atoi(tmp_name) == 0) && (atof(tmp_name) == 0))	//过滤常量
+					{
+						var_count = get_varname(var_name, tmp_name);
+						//检查变量是否定义
+						if(params_undefined_check(var_name))
+						{
+							error_code |= ERR_PARAM_UNDEFINED;	
+						}
+						else
+						{
+							head = get_params_info(var_name);
+							if(var_count > head->var_count)
+							{
+								memset(error_msg_buf, 0, ERROR_MSG_LENGTH);
+								snprintf(error_msg_buf, ERROR_MSG_LENGTH, "\"register beyond access for '%s'\"", var_name);
+								set_Msg_to_errInfo(LINENUM, ERR_REG_OUTBOUNDS, error_msg_buf);
+								error_code |= ERR_REG_OUTBOUNDS;
+							}
+							else if(var_count <= 0)
+							{
+								memset(error_msg_buf, 0, ERROR_MSG_LENGTH);
+								snprintf(error_msg_buf, ERROR_MSG_LENGTH, "\"invalid element subscript for '%s'\"", var_name);
+								set_Msg_to_errInfo(LINENUM, ERR_PARAM_EXCESS, error_msg_buf);
+								error_code |= ERR_PARAM_EXCESS;
+							}
+						}
+					}
 				}
 			}
 		}
@@ -1353,7 +1393,7 @@ int scripts_checkout(const char *scripts)
 					if(var_count <= 0)
 					{
 						memset(error_msg_buf, 0, ERROR_MSG_LENGTH);
-						snprintf(error_msg_buf, ERROR_MSG_LENGTH, "\"invalid element subscript '%s'\"", var_name);
+						snprintf(error_msg_buf, ERROR_MSG_LENGTH, "\"invalid element subscript for '%s'\"", var_name);
 						set_Msg_to_errInfo(LINENUM, ERR_PARAM_EXCESS, error_msg_buf);
 						error_code |= ERR_PARAM_EXCESS;
 					}
@@ -1469,7 +1509,7 @@ int scripts_checkout(const char *scripts)
 					if(var_count <= 0)
 					{
 						memset(error_msg_buf, 0, ERROR_MSG_LENGTH);
-						snprintf(error_msg_buf, ERROR_MSG_LENGTH, "\"invalid element subscript '%s'\"", var_name);
+						snprintf(error_msg_buf, ERROR_MSG_LENGTH, "\"invalid element subscript for '%s'\"", var_name);
 						set_Msg_to_errInfo(LINENUM, ERR_PARAM_EXCESS, error_msg_buf);
 						error_code |= ERR_PARAM_EXCESS;
 					}
@@ -1614,6 +1654,15 @@ int scripts_checkout(const char *scripts)
 		}
 		else if(!strcmp(cmds, "IF"))
 		{
+			//IF最多支持3层嵌套
+			if(NestofIF_check())
+			{
+				memset(error_msg_buf, 0, ERROR_MSG_LENGTH);
+				snprintf(error_msg_buf, ERROR_MSG_LENGTH, "\"too more nested levels for 'IF'\"");
+				set_Msg_to_errInfo(LINENUM, ERR_IFCMD_EXCESS, error_msg_buf);
+				error_code |= ERR_IFCMD_EXCESS;	
+			}
+
 			if(brackets_exist_check(line) == 1)	//only for IF
 			{
 				memset(error_msg_buf, 0, ERROR_MSG_LENGTH);
@@ -1628,13 +1677,71 @@ int scripts_checkout(const char *scripts)
 				set_Msg_to_errInfo(LINENUM, ERR_FORMAT, error_msg_buf);
 				error_code |= ERR_FORMAT;	
 			}
-			//IF最多支持3层嵌套
-			if(NestofIF_check())
+			else if(brackets_exist_check(line) == 3)	//only for IF
 			{
 				memset(error_msg_buf, 0, ERROR_MSG_LENGTH);
-				snprintf(error_msg_buf, ERROR_MSG_LENGTH, "\"too more nested levels for 'IF'\"");
-				set_Msg_to_errInfo(LINENUM, ERR_IFCMD_EXCESS, error_msg_buf);
-				error_code |= ERR_IFCMD_EXCESS;	
+				snprintf(error_msg_buf, ERROR_MSG_LENGTH, "\"invalid format for 'IF'\"");
+				set_Msg_to_errInfo(LINENUM, ERR_FORMAT, error_msg_buf);
+				error_code |= ERR_FORMAT;
+			}
+			else
+			{
+				cp = strchr(line, '(');
+				while(1)
+				{
+					memset(var_name, 0, 16);
+					memset(tmp_name, 0, 16);
+					len = 0;
+					while((isspace((int) *cp) || *cp == '	' || *cp == '=' || *cp == '(' || *cp == ')'\
+						|| *cp == '!' || *cp == '&' || *cp == '|' || *cp == '<' || *cp == '>') && (*cp != '\0'))
+					{
+						cp ++;
+					}
+					cq = cp;
+					if(*cp == '\0' || *cp == '\n')
+					{
+						break;
+					}
+					else
+					{
+						while(((!isspace((int) *cp)) && (*cp != '	') && (*cp != '=') && (*cp != '(')\
+								&& (*cp != ')') && (*cp != '!') && (*cp != '&') && (*cp != '|')\
+								&& (*cp != '<') && (*cp != '>') && (*cp != '\r')) && (*cp != '\0'))
+						{
+							cp ++;
+							len ++;
+						}
+						strncpy(tmp_name, cq, len);
+
+						if((atoi(tmp_name) == 0) && (atof(tmp_name) == 0) && (strcmp(tmp_name, "0")))	//过滤常量
+						{
+							var_count = get_varname(var_name, tmp_name);
+							//检查变量是否定义
+							if(params_undefined_check(var_name))
+							{
+								error_code |= ERR_PARAM_UNDEFINED;	
+							}
+							else
+							{
+								head = get_params_info(var_name);
+								if(var_count > head->var_count)
+								{
+									memset(error_msg_buf, 0, ERROR_MSG_LENGTH);
+									snprintf(error_msg_buf, ERROR_MSG_LENGTH, "\"register beyond access for '%s'\"", var_name);
+									set_Msg_to_errInfo(LINENUM, ERR_REG_OUTBOUNDS, error_msg_buf);
+									error_code |= ERR_REG_OUTBOUNDS;
+								}
+								else if(var_count <= 0)
+								{
+									memset(error_msg_buf, 0, ERROR_MSG_LENGTH);
+									snprintf(error_msg_buf, ERROR_MSG_LENGTH, "\"invalid element subscript for '%s'\"", var_name);
+									set_Msg_to_errInfo(LINENUM, ERR_PARAM_EXCESS, error_msg_buf);
+									error_code |= ERR_PARAM_EXCESS;
+								}
+							}
+						}
+					}
+				}
 			}
 		}
 		else if(!strcmp(cmds, "SLEEP"))
@@ -1709,11 +1816,11 @@ int main()
 					"UCTRLS 4003 30001 B UDO2[2];\n"\
 					"IN_D 1, 3;\n"\
 					"IN_A 1, 2;\n"\
-					"IF(a == b)\n"\
-					"IF(a == b)\n"\
-					"IF(a == b)\n"\
+					"IF\n"\
+					"IF\n"\
+					"IF\n"\
 					"ENDIF\n"\
-					"IF(a == b)\n"\
+					"IF\n"\
 					"ELSE\n"\
 					"ENDIF\n"\
 					"SET_THV tmp 20 30;\n"\
