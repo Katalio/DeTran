@@ -451,16 +451,19 @@ int endsymbol_check(char *line)
 			set_Msg_to_errInfo(LINENUM, ERR_FORMAT, error_msg_buf);
 		}
 
-		memset(error_msg_buf, 0, ERROR_MSG_LENGTH);
-		if(!strcmp(cmd, "IF") || !strcmp(cmd, "ELSE") || !strcmp(cmd, "ENDIF"))
+		if(p == NULL)
 		{
-			snprintf(error_msg_buf, ERROR_MSG_LENGTH, "\"expected '\\n' at the end\"");
+			memset(error_msg_buf, 0, ERROR_MSG_LENGTH);
+			if(!strcmp(cmd, "IF") || !strcmp(cmd, "ELSE") || !strcmp(cmd, "ENDIF"))
+			{
+				snprintf(error_msg_buf, ERROR_MSG_LENGTH, "\"expected '\\n' at the end\"");
+			}
+			else
+			{
+				snprintf(error_msg_buf, ERROR_MSG_LENGTH, "\"expected ';' at the end\"");
+			}
+			set_Msg_to_errInfo(LINENUM, ERR_FORMAT, error_msg_buf);
 		}
-		else
-		{
-			snprintf(error_msg_buf, ERROR_MSG_LENGTH, "\"expected ';' at the end\"");
-		}
-		set_Msg_to_errInfo(LINENUM, ERR_FORMAT, error_msg_buf);
 	}
 
 	return 0;
@@ -1746,7 +1749,7 @@ int scripts_checkout(const char *scripts)
 					memset(var_name, 0, 16);
 					memset(tmp_name, 0, 16);
 					len = 0;
-					while((isspace((int) *cp) || *cp == '	' || *cp == '=' || *cp == '(' || *cp == ')'\
+					while((isspace((int) *cp) || *cp == '	' || *cp == '=' || *cp == '(' || *cp == ')' || *cp == ';'\
 						|| *cp == '!' || *cp == '&' || *cp == '|' || *cp == '<' || *cp == '>') && (*cp != '\0'))
 					{
 						cp ++;
@@ -1760,7 +1763,7 @@ int scripts_checkout(const char *scripts)
 					{
 						while(((!isspace((int) *cp)) && (*cp != '	') && (*cp != '=') && (*cp != '(')\
 								&& (*cp != ')') && (*cp != '!') && (*cp != '&') && (*cp != '|')\
-								&& (*cp != '<') && (*cp != '>') && (*cp != '\r')) && (*cp != '\0'))
+								&& (*cp != '<') && (*cp != '>') && (*cp != ';') && (*cp != '\r')) && (*cp != '\0'))
 						{
 							cp ++;
 							len ++;
@@ -1870,11 +1873,7 @@ int main()
 					"UCTRLS 4003 30001 B UDO2[2];\n"\
 					"IN_D 1, 3;\n"\
 					"IN_A 1, 2;\n"\
-					"IF\n"\
-					"IF\n"\
-					"IF\n"\
-					"ENDIF\n"\
-					"IF\n"\
+					"IF(tmp == 0)\n"\
 					"ELSE\n"\
 					"ENDIF\n"\
 					"SET_THV tmp 20 30;\n"\
