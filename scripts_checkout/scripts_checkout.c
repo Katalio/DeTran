@@ -378,7 +378,7 @@ int aidi_reg_check(char *var_name, unsigned int var_count)
 
 int arr_format_check(char *line)
 {
-	int n, len;
+	int len;
 	int i, j, error_code = 0;
 	char *p, tmp[LINE_SIZE] = {0};
 
@@ -773,7 +773,7 @@ int scripts_checkout(const char *scripts)
 	char *p, *nv, *nvp, *cp, *cq;
 	char *cmd, *regAddr, *var_type, *var_name_b;
 	char var_name[16], tmp_name[16];
-	unsigned int var_count = 0;	//元素的个数，针对数组变量来说，单个变量为1
+	int var_count = 0;	//元素的个数，针对数组变量来说，单个变量为1
 	char *start_num, *read_count;	//读入寄存器的开始编号及个数
 	char *modbus_cmd, *overtime;
 	params_defined_info *head;
