@@ -55,17 +55,21 @@ loop:	k = strsep(&buf, sep);
 int scripts_getline(char *line, const char *scripts)
 {
 	static int cur_index = 0;
-	unsigned int whichline = 1;
-	int index = 0;
 	int i = 0;
 
 	memset(line, 0, LINE_SIZE);
 
 	//读取当前行
-	while((scripts[cur_index] != '\n') && (scripts[cur_index] != '\0'))
+	while((scripts[cur_index] != '\n') && (scripts[cur_index] != '\0') && (i <= LINE_SIZE))
 	{
 		line[i ++] = scripts[cur_index ++];
 	}
+	if(i > LINE_SIZE)
+	{
+		LINENUM ++;
+		return i;
+	}
+
 	if(scripts[cur_index] == '\n')
 		line[i] = scripts[cur_index];
 	cur_index ++;	//cur_index++是为了指向'\n'的后一个字符，即下一行开头
@@ -103,7 +107,7 @@ void add_variable_to_defInfo(char *name, char *type, unsigned int count)
 
 void set_Msg_to_errInfo(unsigned int linenum, script_syntax_error_code error_code, char *error_msg)
 {
-	err_infolist[err_tail].linenum = linenum - 1;	//LINENUM记录的是当前行的下一行
+	err_infolist[err_tail].linenum = linenum - 1;	//linenum记录的是当前行的下一行
 	err_infolist[err_tail].error_code = error_code;
 	strncpy(err_infolist[err_tail].error_msg, error_msg, ERROR_MSG_LENGTH);
 
@@ -236,6 +240,28 @@ int get_varname(char *var_name, char *buf)
 	return count;
 }
 
+params_defined_info *get_params_info(char *name)
+{
+	params_defined_info *head;
+	int i = 0;
+	char *ptr;
+
+	while(i < DEFINED_COUNT)
+	{
+		if(strcmp(params_definfo[i].var_name, name) == 0)
+		{
+			break;
+		}
+
+		i ++;
+	}
+
+	ptr = params_definfo[i].var_name;
+	head = container_of(ptr, params_defined_info, var_name);
+
+	return head;
+}
+
 int cmd_check(char *cmd)
 {
 	char **cmds_ptr = script_cmds;
@@ -307,6 +333,131 @@ int aidi_type_check(char *var_name, char *var_type)
 	}
 
 	return err_flag;
+}
+
+int init_value_type_check(char *line, char *var_name)
+{
+	params_defined_info *head;
+	char *cp, *cq, tmp[16];
+	int i = 0, len = 0, n = 0;
+	int err_flag = 0;
+
+	head = get_params_info(var_name);
+	if(strchr(line, '='))
+	{
+		//变量类型不为浮点型则检查
+		if(strchr(line, '{'))	//数组
+		{
+			cp = strchr(line, '{');
+			cp ++;
+			while(1)
+			{
+				memset(tmp, 0, 16);
+				len = 0;
+				while(isspace((int) *cp) || (*cp == '\t'))
+				{
+					cp ++;
+				}
+				cq = cp;
+				if(*cp == '}')
+				{
+					break;
+				}
+				else
+				{
+					while((!isspace((int) *cp) && (*cp != '\t') && (*cp != ',')) && (*cp != '}'))
+					{
+						cp ++;
+						len ++;
+					}
+					strncpy(tmp, cq, len);
+				}
+
+				for(i = 0; i < strlen(tmp); i ++)
+				{
+					if(*(tmp + i) == '.')
+						n ++;
+				}
+				if(n == 1)
+				{
+					if(strncmp(head->var_type, "F", 1) != 0)
+					{
+						memset(error_msg_buf, 0, ERROR_MSG_LENGTH);
+						snprintf(error_msg_buf, ERROR_MSG_LENGTH, "\"'%s' is float, but type of '%s' is '%s'\"", tmp, var_name, head->var_type);
+						set_Msg_to_errInfo(LINENUM, ERR_VARTYPE_CONFUSING, error_msg_buf);
+						err_flag = 1;
+					}
+				}
+				else if(n > 1)
+				{
+					memset(error_msg_buf, 0, ERROR_MSG_LENGTH);
+					snprintf(error_msg_buf, ERROR_MSG_LENGTH, "\"invalid value '%s'\"", tmp);
+					set_Msg_to_errInfo(LINENUM, ERR_VARTYPE_CONFUSING, error_msg_buf);
+					err_flag = 1;
+				}
+
+				if(*cp == ',')
+					cp ++;
+			}
+		}
+		else	//非数组
+		{
+			memset(tmp, 0, 16);
+			cp = strchr(line, '=');
+			cp ++;
+			while(isspace((int) *cp) || (*cp == '\t'))
+			{
+				cp ++;
+			}
+			cq = cp;
+			while((!isspace((int) *cp) && (*cp != '\t')) && (*cp != ';'))
+			{
+				cp ++;
+				len ++;
+			}
+			strncpy(tmp, cq, len);
+
+			for(i = 0; i < strlen(tmp); i ++)
+			{
+				if(*(tmp + i) == '.')
+					n ++;
+			}
+			if(n == 1)
+			{
+				if(strncmp(head->var_type, "F", 1) != 0)
+				{
+					memset(error_msg_buf, 0, ERROR_MSG_LENGTH);
+					snprintf(error_msg_buf, ERROR_MSG_LENGTH, "\"'%s' is float, but type of '%s' is '%s'\"", tmp, var_name, head->var_type);
+					set_Msg_to_errInfo(LINENUM, ERR_VARTYPE_CONFUSING, error_msg_buf);
+					err_flag = 1;
+				}
+			}
+			else if(n > 1)
+			{
+				memset(error_msg_buf, 0, ERROR_MSG_LENGTH);
+				snprintf(error_msg_buf, ERROR_MSG_LENGTH, "\"invalid value '%s'\"", tmp);
+				set_Msg_to_errInfo(LINENUM, ERR_VARTYPE_CONFUSING, error_msg_buf);
+				err_flag = 1;
+			}
+		}
+	}
+
+	return err_flag;
+/*
+	if(strchr(line, '='))
+	{
+		if(strchr(line, '.'))
+		{
+			//检查变量类型是否是F
+			head = get_params_info(var_name);
+			if(strncmp(head->var_type, "F", 1) != 0)
+			{
+				memset(error_msg_buf, 0, ERROR_MSG_LENGTH);
+				snprintf(error_msg_buf, ERROR_MSG_LENGTH, "\"initializer has float value, but type of '%s' is '%s'\"", var_name, head->var_type);
+				set_Msg_to_errInfo(LINENUM, ERR_VARTYPE_CONFUSING, error_msg_buf);
+			}
+		}
+	}*/
 }
 
 int brackets_check(char *line)
@@ -425,48 +576,74 @@ int arr_excess_check(char *line)
 
 int endsymbol_check(char *line)
 {
-	char *p, *q = NULL, cmd[16] = {0};
+	char *p = NULL, *q = NULL, *l = NULL, cmd[16] = {0};
+	int i, k = 0;
+	int err_flag = 0;
 
 	get_cmd(cmd, line);
 	if(!strcmp(cmd, "IF") || !strcmp(cmd, "ELSE") || !strcmp(cmd, "ENDIF"))
 	{
 		p = strchr(line, '\n');
 		q = strchr(line, ';');
-	}
-	else
-	{
-		p = strchr(line, ';');
-	}
 
-	if((p != NULL) && (q == NULL))
-	{
-		return 1;
-	}
-	else
-	{
 		if(q != NULL)
 		{
 			memset(error_msg_buf, 0, ERROR_MSG_LENGTH);
 			snprintf(error_msg_buf, ERROR_MSG_LENGTH, "\"unexpected ';' for '%s'\"", cmd);
 			set_Msg_to_errInfo(LINENUM, ERR_FORMAT, error_msg_buf);
+
+			err_flag = 1;
 		}
 
 		if(p == NULL)
 		{
 			memset(error_msg_buf, 0, ERROR_MSG_LENGTH);
-			if(!strcmp(cmd, "IF") || !strcmp(cmd, "ELSE") || !strcmp(cmd, "ENDIF"))
-			{
-				snprintf(error_msg_buf, ERROR_MSG_LENGTH, "\"expected '\\n' at the end\"");
-			}
-			else
-			{
-				snprintf(error_msg_buf, ERROR_MSG_LENGTH, "\"expected ';' at the end\"");
-			}
+			snprintf(error_msg_buf, ERROR_MSG_LENGTH, "\"expected '\\n' at the end\"");
 			set_Msg_to_errInfo(LINENUM, ERR_FORMAT, error_msg_buf);
+
+			err_flag = 1;
+		}
+	}
+	else
+	{
+		for(i = 0; i < strlen(line); i ++)
+		{
+			if(line[i] == ';')
+				k ++;
+		}
+
+		if(k < 1)
+		{
+			memset(error_msg_buf, 0, ERROR_MSG_LENGTH);
+			snprintf(error_msg_buf, ERROR_MSG_LENGTH, "\"expected ';' at the end\"");
+			set_Msg_to_errInfo(LINENUM, ERR_FORMAT, error_msg_buf);
+
+			err_flag = 1;
+		}
+		else	
+		{
+			if(k > 1)
+			{
+				memset(error_msg_buf, 0, ERROR_MSG_LENGTH);
+				snprintf(error_msg_buf, ERROR_MSG_LENGTH, "\"too more ';' in the line\"");
+				set_Msg_to_errInfo(LINENUM, ERR_FORMAT, error_msg_buf);
+
+				err_flag = 1;
+			}
+
+			l = strrchr(line, ';');
+			if((*(l + 1) != ' ') && (*(l + 1) != '\n') && (*(l + 1) != '	') && (*(l + 1) != '\0'))
+			{
+				memset(error_msg_buf, 0, ERROR_MSG_LENGTH);
+				snprintf(error_msg_buf, ERROR_MSG_LENGTH, "\"too more excuting statements in one line\"");
+				set_Msg_to_errInfo(LINENUM, ERR_FORMAT, error_msg_buf);
+
+				err_flag = 1;
+			}
 		}
 	}
 
-	return 0;
+	return err_flag;
 }
 
 int regAddr_confdef_check(int addr)
@@ -536,26 +713,99 @@ int params_undefined_check(char *name)
 	return 1;
 }
 
-params_defined_info *get_params_info(char *name)
+int cal_format_check(char *line)
 {
-	params_defined_info *head;
-	int i = 0;
-	char *ptr;
+	//两个操作符不能相邻，数字不能被分隔开(此处包括空格和TAB键)，例如3 * 5 78 /+ 2	1之类的
+	char *op_characters[] = {"~", "+", "-", "*", "/", "&", "|", "^", "<<", ">>", NULL};
+	char **p, tmp[3];
+	int i = 0, op_flag = 0;
+	int error_flag = 0;
 
-	while(i < DEFINED_COUNT)
+	while(*(line + i))
 	{
-		if(strcmp(params_definfo[i].var_name, name) == 0)
+		p = op_characters;
+		memset(tmp, 0, 3);
+		if(!isspace((int) *(line+i)) && *(line + i) != '\t')
 		{
-			break;
+			if(*(line + i) == '>')
+			{
+				if((*(line + i + 1) == '>') && (*(line + i + 2) != '>'))
+				{
+					strcpy(tmp, ">>");
+				}
+				else
+				{
+					memset(error_msg_buf, 0, ERROR_MSG_LENGTH);
+					snprintf(error_msg_buf, ERROR_MSG_LENGTH, "\"exist unknown operator\"");
+					set_Msg_to_errInfo(LINENUM, ERR_FORMAT, error_msg_buf);
+
+					error_flag = 1;
+				}
+			}
+			else if(*(line + i) == '<')
+			{
+				if((*(line + i + 1) == '<') && (*(line + i + 2) != '<'))
+				{
+					strcpy(tmp, "<<");
+				}
+				else
+				{
+					memset(error_msg_buf, 0, ERROR_MSG_LENGTH);
+					snprintf(error_msg_buf, ERROR_MSG_LENGTH, "\"exist unknown operator\"");
+					set_Msg_to_errInfo(LINENUM, ERR_FORMAT, error_msg_buf);
+
+					error_flag = 1;
+				}
+			}
+			else
+			{
+				tmp[0] = *(line + i);
+			}
+
+			if(op_flag)
+			{
+				while(*p)
+				{
+					if(!strcmp(tmp, *p) || !strcmp(tmp, ";"))
+					{
+						memset(error_msg_buf, 0, ERROR_MSG_LENGTH);
+						snprintf(error_msg_buf, ERROR_MSG_LENGTH, "\"expected expression before '%s' token\"", tmp);
+						set_Msg_to_errInfo(LINENUM, ERR_FORMAT, error_msg_buf);
+
+						error_flag = 1;
+						break;
+					}
+					p ++;
+				}
+				if(*p == NULL)
+				{
+					op_flag = 0;
+				}
+			}
+
+			p = op_characters;
+			while(*p)
+			{
+				if(!strcmp(*p, tmp))
+				{
+					op_flag = 1;
+					break;
+				}
+				p ++;
+			}
+			if(*p == NULL)
+			{
+				op_flag = 0;
+			}
 		}
 
-		i ++;
+		if(strlen(tmp) != 0)
+			i += strlen(tmp);
+		else
+			i ++;
 	}
 
-	ptr = params_definfo[i].var_name;
-	head = container_of(ptr, params_defined_info, var_name);
-
-	return head;
+	return error_flag;
 }
 
 int defvar_preversion_check(void)
@@ -777,7 +1027,7 @@ int scripts_checkout(const char *scripts)
 	char *start_num, *read_count;	//读入寄存器的开始编号及个数
 	char *modbus_cmd, *overtime;
 	params_defined_info *head;
-	unsigned int cur_size = 0, total_size;
+	unsigned int cur_size = 0, line_size, total_size;
 
 	total_size = strlen(scripts);
 
@@ -791,7 +1041,18 @@ int scripts_checkout(const char *scripts)
 	memset(line, 0, LINE_SIZE);
 	while(cur_size < total_size)
 	{
-		cur_size += scripts_getline(line, scripts);
+		line_size = scripts_getline(line, scripts);
+		if(line_size > LINE_SIZE)
+		{
+			memset(error_msg_buf, 0, ERROR_MSG_LENGTH);
+			snprintf(error_msg_buf, ERROR_MSG_LENGTH, "\"too much size for one line\"");
+			set_Msg_to_errInfo(LINENUM, ERR_SCRIPTS_OVERSIZE, error_msg_buf);
+			error_code |= ERR_SCRIPTS_OVERSIZE;	
+
+			return error_code;
+		}
+
+		cur_size += line_size;
 
 		cp = line;
 		while((isspace((int) *cp) || *cp == '\n' || *cp =='\r') && *cp != '\0')
@@ -805,7 +1066,7 @@ int scripts_checkout(const char *scripts)
 
 		char cmds[16] = {0};			
 
-		if(endsymbol_check(line) == 0)	//检查有无结束符
+		if(endsymbol_check(line))	//检查有无结束符
 		{
 			error_code |= ERR_FORMAT;
 		}
@@ -858,7 +1119,11 @@ int scripts_checkout(const char *scripts)
 				{
 					error_code |= ERR_VARTYPE_CONFUSING;
 				}
-
+				//检测所赋的值是否与变量类型相对应，只需检查浮点型即可	
+				if(init_value_type_check(line, var_name))
+				{
+					error_code |= ERR_VARTYPE_CONFUSING;	
+				}
 				if(!strcmp(cmds, "VAR"))
 				{
 					if(strchr(var_name_b, '[') != NULL)
@@ -867,6 +1132,21 @@ int scripts_checkout(const char *scripts)
 						snprintf(error_msg_buf, ERROR_MSG_LENGTH, "\"unexpected '[]' for 'VAR'\"");
 						set_Msg_to_errInfo(LINENUM, ERR_DEFVAR_CONFUSING, error_msg_buf);
 						error_code |= ERR_DEFVAR_CONFUSING;	
+					}
+					if(p = strchr(line, '='))
+					{
+						p ++;
+						while(isspace((int) *p))
+						{
+							p ++;
+						}
+						if((*p < '0') || (*p > '9'))
+						{
+							memset(error_msg_buf, 0, ERROR_MSG_LENGTH);
+							snprintf(error_msg_buf, ERROR_MSG_LENGTH, "\"no initial value next to '='\"");
+							set_Msg_to_errInfo(LINENUM, ERR_FORMAT, error_msg_buf);
+							error_code |= ERR_FORMAT;	
+						}
 					}
 				}
 				if(!strcmp(cmds, "VARS"))
@@ -899,16 +1179,29 @@ int scripts_checkout(const char *scripts)
 					//若数组赋初值，检查所赋初值个数是否大于定义的个数及格式
 					if(strchr(line, '='))
 					{
-						if(arr_format_check(line))
-						{
-							error_code |= ERR_FORMAT;
-						}
-						else if(arr_excess_check(line) > var_count)
+						if(strchr(line, '{') == NULL)
 						{
 							memset(error_msg_buf, 0, ERROR_MSG_LENGTH);
-							snprintf(error_msg_buf, ERROR_MSG_LENGTH, "\"excess elements in array initializer\"");
-							set_Msg_to_errInfo(LINENUM, ERR_PARAM_EXCESS, error_msg_buf);
-							error_code |= ERR_PARAM_EXCESS;
+							snprintf(error_msg_buf, ERROR_MSG_LENGTH, "\"no initial value next to '='\"");
+							set_Msg_to_errInfo(LINENUM, ERR_FORMAT, error_msg_buf);
+							error_code |= ERR_FORMAT;	
+						}
+						else
+						{
+							if(arr_format_check(line))
+							{
+								error_code |= ERR_FORMAT;
+							}
+							else
+							{
+								if(arr_excess_check(line) > var_count)
+								{
+									memset(error_msg_buf, 0, ERROR_MSG_LENGTH);
+									snprintf(error_msg_buf, ERROR_MSG_LENGTH, "\"excess elements in array initializer\"");
+									set_Msg_to_errInfo(LINENUM, ERR_PARAM_EXCESS, error_msg_buf);
+									error_code |= ERR_PARAM_EXCESS;
+								}
+							}
 						}
 					}
 				}
@@ -923,7 +1216,7 @@ int scripts_checkout(const char *scripts)
 					snprintf(error_msg_buf, ERROR_MSG_LENGTH, "\"too more elements for '%s'\"", cmds);
 
 				set_Msg_to_errInfo(LINENUM, ERR_FORMAT, error_msg_buf);
-				error_code |= ERR_FORMAT;	
+				error_code |= ERR_FORMAT;
 			}
 		}
 		else if(!strcmp(cmds, "INTF") || !strcmp(cmds, "INTFS"))
@@ -978,7 +1271,11 @@ int scripts_checkout(const char *scripts)
 				{
 					error_code |= ERR_VARTYPE_CONFUSING;
 				}
-				
+				//检测所赋的值是否与变量类型相对应，只需检查浮点型即可	
+				if(init_value_type_check(line, var_name))
+				{
+					error_code |= ERR_VARTYPE_CONFUSING;	
+				}
 				if(!strcmp(cmds, "INTF"))
 				{
 					if(strchr(var_name_b, '[') != NULL)
@@ -987,6 +1284,21 @@ int scripts_checkout(const char *scripts)
 						snprintf(error_msg_buf, ERROR_MSG_LENGTH, "\"unexpected '[]' for 'INTF'\"");
 						set_Msg_to_errInfo(LINENUM, ERR_DEFVAR_CONFUSING, error_msg_buf);
 						error_code |= ERR_DEFVAR_CONFUSING;	
+					}
+					if(p = strchr(line, '='))
+					{
+						p ++;
+						while(isspace((int) *p))
+						{
+							p ++;
+						}
+						if((*p < '0') || (*p > '9'))
+						{
+							memset(error_msg_buf, 0, ERROR_MSG_LENGTH);
+							snprintf(error_msg_buf, ERROR_MSG_LENGTH, "\"no initial value next to '='\"");
+							set_Msg_to_errInfo(LINENUM, ERR_FORMAT, error_msg_buf);
+							error_code |= ERR_FORMAT;	
+						}
 					}
 				}
 				if(!strcmp(cmds, "INTFS"))
@@ -1019,16 +1331,29 @@ int scripts_checkout(const char *scripts)
 					//若数组赋初值，检查所赋初值个数是否大于定义的个数及格式
 					if(strchr(line, '='))
 					{
-						if(arr_format_check(line))
-						{
-							error_code |= ERR_FORMAT;
-						}
-						else if(arr_excess_check(line) > var_count)
+						if(strchr(line, '{') == NULL)
 						{
 							memset(error_msg_buf, 0, ERROR_MSG_LENGTH);
-							snprintf(error_msg_buf, ERROR_MSG_LENGTH, "\"excess elements in array initializer\"");
-							set_Msg_to_errInfo(LINENUM, ERR_PARAM_EXCESS, error_msg_buf);
-							error_code |= ERR_PARAM_EXCESS;
+							snprintf(error_msg_buf, ERROR_MSG_LENGTH, "\"no initial value next to '='\"");
+							set_Msg_to_errInfo(LINENUM, ERR_FORMAT, error_msg_buf);
+							error_code |= ERR_FORMAT;	
+						}
+						else
+						{
+							if(arr_format_check(line))
+							{
+								error_code |= ERR_FORMAT;
+							}
+							else
+							{
+								if(arr_excess_check(line) > var_count)
+								{
+									memset(error_msg_buf, 0, ERROR_MSG_LENGTH);
+									snprintf(error_msg_buf, ERROR_MSG_LENGTH, "\"excess elements in array initializer\"");
+									set_Msg_to_errInfo(LINENUM, ERR_PARAM_EXCESS, error_msg_buf);
+									error_code |= ERR_PARAM_EXCESS;
+								}
+							}
 						}
 					}
 				}
@@ -1102,6 +1427,26 @@ int scripts_checkout(const char *scripts)
 						snprintf(error_msg_buf, ERROR_MSG_LENGTH, "\"unexpected '[]' for 'CTRL'\"");
 						set_Msg_to_errInfo(LINENUM, ERR_DEFVAR_CONFUSING, error_msg_buf);
 						error_code |= ERR_DEFVAR_CONFUSING;	
+					}
+					if(p = strchr(line, '='))
+					{
+						p ++;
+						while(isspace((int) *p))
+						{
+							p ++;
+						}
+						if((*p < '0') || (*p > '9'))
+						{
+							memset(error_msg_buf, 0, ERROR_MSG_LENGTH);
+							snprintf(error_msg_buf, ERROR_MSG_LENGTH, "\"no initial value next to '='\"");
+							set_Msg_to_errInfo(LINENUM, ERR_FORMAT, error_msg_buf);
+							error_code |= ERR_FORMAT;	
+						}
+						//检测所赋的值是否与变量类型相对应，只需检查浮点型即可	
+						if(init_value_type_check(line, var_name))
+						{
+							error_code |= ERR_VARTYPE_CONFUSING;	
+						}
 					}
 				}
 				if(!strcmp(cmds, "CTRLS"))
@@ -1208,6 +1553,26 @@ int scripts_checkout(const char *scripts)
 						set_Msg_to_errInfo(LINENUM, ERR_DEFVAR_CONFUSING, error_msg_buf);
 						error_code |= ERR_DEFVAR_CONFUSING;	
 					}
+					if(p = strchr(line, '='))
+					{
+						p ++;
+						while(isspace((int) *p))
+						{
+							p ++;
+						}
+						if((*p < '0') || (*p > '9'))
+						{
+							memset(error_msg_buf, 0, ERROR_MSG_LENGTH);
+							snprintf(error_msg_buf, ERROR_MSG_LENGTH, "\"no initial value next to '='\"");
+							set_Msg_to_errInfo(LINENUM, ERR_FORMAT, error_msg_buf);
+							error_code |= ERR_FORMAT;	
+						}
+						//检测所赋的值是否与变量类型相对应，只需检查浮点型即可	
+						if(init_value_type_check(line, var_name))
+						{
+							error_code |= ERR_VARTYPE_CONFUSING;	
+						}
+					}
 				}
 				if(!strcmp(cmds, "UCTRLS"))
 				{
@@ -1309,13 +1674,18 @@ int scripts_checkout(const char *scripts)
 		}
 		else if(!strcmp(cmds, "CAL"))
 		{
+			if(cal_format_check(line))
+			{
+				error_code |= ERR_FORMAT;	
+			}
+
 			cp = strchr(line, ' ');
 			while(1)
 			{
 				memset(var_name, 0, 16);
 				memset(tmp_name, 0, 16);
 				len = 0;
-				while((isspace((int) *cp) || *cp == '	' || *cp == '=' || *cp == '+' || *cp == '-' || *cp == '*' || *cp == '/'\
+				while((isspace((int) *cp) || *cp == '\t' || *cp == '=' || *cp == '+' || *cp == '-' || *cp == '*' || *cp == '/'\
 					|| *cp == '~' || *cp == '&' || *cp == '|' || *cp == '^' || *cp == '<' || *cp == '>') && (*cp != '\0'))
 				{
 					cp ++;
@@ -1327,7 +1697,7 @@ int scripts_checkout(const char *scripts)
 				}
 				else
 				{
-					while(((!isspace((int) *cp)) && (*cp != '	') && (*cp != '+') && (*cp != '-') && (*cp != '*') && (*cp != '/')\
+					while(((!isspace((int) *cp)) && (*cp != '\t') && (*cp != '+') && (*cp != '-') && (*cp != '*') && (*cp != '/')\
 						&& (*cp != '~') && (*cp != '&') && (*cp != '|') && (*cp != '^')\
 						&& (*cp != '<') && (*cp != '>') && (*cp != '\r') && (*cp != ';')) && (*cp != '\0'))
 					{
@@ -1749,7 +2119,7 @@ int scripts_checkout(const char *scripts)
 					memset(var_name, 0, 16);
 					memset(tmp_name, 0, 16);
 					len = 0;
-					while((isspace((int) *cp) || *cp == '	' || *cp == '=' || *cp == '(' || *cp == ')' || *cp == ';'\
+					while((isspace((int) *cp) || *cp == '\t' || *cp == '=' || *cp == '(' || *cp == ')' || *cp == ';'\
 						|| *cp == '!' || *cp == '&' || *cp == '|' || *cp == '<' || *cp == '>') && (*cp != '\0'))
 					{
 						cp ++;
@@ -1761,7 +2131,7 @@ int scripts_checkout(const char *scripts)
 					}
 					else
 					{
-						while(((!isspace((int) *cp)) && (*cp != '	') && (*cp != '=') && (*cp != '(')\
+						while(((!isspace((int) *cp)) && (*cp != '\t') && (*cp != '=') && (*cp != '(')\
 								&& (*cp != ')') && (*cp != '!') && (*cp != '&') && (*cp != '|')\
 								&& (*cp != '<') && (*cp != '>') && (*cp != ';') && (*cp != '\r')) && (*cp != '\0'))
 						{
@@ -1853,8 +2223,8 @@ int main()
 {
 	int error_code = 0;
 	char *scripts = "  VARS 	 W 	 AI[12];	\n"\
-					"	VARS B DI[3];\n"\
-					"VAR F tmp;\n"\
+					"	VARS B DI[3] = {2, 3, 5};\n"\
+					"VAR F tmp = 5.5;\n"\
 					"\n"\
 					"   \n"\
 					"VAR F DA;\n"\
@@ -1876,7 +2246,7 @@ int main()
 					"IF(tmp == 0)\n"\
 					"ELSE\n"\
 					"ENDIF\n"\
-					"SET_THV tmp 20 30;\n"\
+					"SET_THV 	tmp 20 30;\n"\
 					"CAL tmp = AI[1] / 4096 * 3.3 / 165 * 1000 - 4;\n"\
 					"CAL wsdu[1] = tmp * 100 / 16;\n"\
 					"CAL tmp = AI[2] / 4096 * 3.3 / 165 * 1000 - 4;\n"\
@@ -1885,7 +2255,7 @@ int main()
 					"IN_UD UDI01[1],8,090200000008A, 200;\n"\
 					"IN_UF_B UAI02[1],1,010300000002A, 300;\n"\
 					"IN_UFD_B DA,1,090300000004A, 400;\n"\
-					"CAL wspdx = wspd / 10;\n"\
+					"CAL wspdx = wspd + 10  ;\n"\
 					"IN_ATEMP TEMP_V;\n"\
 					"IN_AMVOL MAIN_VOL;\n"\
 					"IN_ABVOL BATTERY_VOL;\n"\
