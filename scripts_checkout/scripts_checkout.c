@@ -135,15 +135,6 @@ void show_errMsg(void)
 		//syslog(LOG_ERR, "[Scritps error]:%s at line %d, ERROR_CODE[%d]", err_infolist[i].error_msg, err_infolist[i].linenum, err_infolist[i].error_code);
 }
 
-void show_params_defined(void)
-{
-	int i;
-
-	printf("Defined params:\n");
-	for(i = 0; params_definfo[i].var_count != 0; i ++)
-		printf("%s\t%s\t%d\n", params_definfo[i].var_name, params_definfo[i].var_type, params_definfo[i].var_count);
-}
-
 char *get_cmd(char *cmd, char *line)
 {
 #if 0
@@ -359,101 +350,162 @@ int aidi_type_check(char *var_name, char *var_type)
 	return err_flag;
 }
 
+int arr_excess_check(char *line)
+{
+	int len;
+	int i, n = 0;
+
+	len = strlen(line);
+	for(i = 0; i < len; i ++)
+	{
+		if(*(line + i) == ',')
+			n += 1;
+	}
+
+	return (n + 1);
+}
+
 int init_value_type_check(char *line, char *var_name)
 {
 	params_defined_info *head;
-	char *cp, *cq, tmp[16];
+	char *cp, *cq, tmp[16], cmd[16] = {0};
 	int i = 0, len = 0, n = 0;
-	int err_flag = 0, ex_flag = 0;
+	int ex_flag = 0, error_code = 0;
+	int counter = 0;
 
+	get_cmd(cmd, line);
 	head = get_params_info(var_name);
 	if(strchr(line, '='))
 	{
 		//变量类型不为浮点型则检查
-		if(strchr(line, '{'))	//数组
+		if(!strcmp(cmd, "VARS") || !strcmp(cmd, "INTFS"))	//数组
 		{
-			cp = strchr(line, '{');
-			cp ++;
-			while(1)
+			if(cp = strchr(line, '{'))
 			{
-				memset(tmp, 0, 16);
-				len = 0;
-				while(isspace((int) *cp) && (*cp != '\0'))
+				cp ++;
+				while(1)
 				{
-					cp ++;
-				}
-				cq = cp;
-				if(*cp == '}' || *cp == ';' || *cp == '\0')
-				{
-					break;
-				}
-				else
-				{
-					while((!isspace((int) *cp) && (*cp != ',')) && (*cp != '}') && (*cp != ';') && (*cp != '\0'))
+					memset(tmp, 0, 16);
+					len = 0;
+					n = 0;
+					ex_flag = 0;
+					while(((*cp == ' ') || (*cp == '\t') || (*cp == '\r')) && (*cp != '\0'))
 					{
 						cp ++;
-						len ++;
 					}
-					strncpy(tmp, cq, len);
-
-					for(i = 0; i < strlen(tmp); i ++)
+					cq = cp;
+					if(*cp == '}' || *cp == ';' || *cp == '\n' || *cp == '\0')
 					{
-						if(*(tmp + i) == '.')
-							n ++;
-
-						if((*(tmp + i) > '9' || *(tmp + i) < '0') 
-								&& (*(tmp + i) != '.' && *(tmp + i) != '-'))
+						break;
+					}
+					else
+					{
+						while((!isspace((int) *cp) && (*cp != ',')) && (*cp != '}') && (*cp != ';') && (*cp != '\0'))
 						{
-							ex_flag = 1;	
+							cp ++;
+							len ++;
 						}
-					}
-					if(n == 1 && !ex_flag)
-					{
-						if(strncmp(head->var_type, "F", 1) != 0)
+						if(len == 0)
+						{
+							cp ++;
+							continue;
+						}
+
+						strncpy(tmp, cq, len);
+						counter += 1;
+
+						if((tmp[0] > '9' || tmp[0] < '0') && tmp[0] != '-')
+							ex_flag = 1;
+
+						for(i = 0; i < strlen(tmp); i ++)
+						{
+							if(*(tmp + i) == '.')
+								n ++;
+
+							if((*(tmp + i) > '9' || *(tmp + i) < '0') 
+									&& (*(tmp + i) != '.' && *(tmp + i) != '-'))
+							{
+								ex_flag = 1;	
+							}
+						}
+						if(n == 1 && !ex_flag)
+						{
+							cp = strchr(tmp, '.');
+							if(*(cp + 1) > '9' || *(cp + 1) < '0')
+							{
+								memset(error_msg_buf, 0, ERROR_MSG_LENGTH);
+								snprintf(error_msg_buf, ERROR_MSG_LENGTH, "\"invalid value '%s'\"", tmp);
+								set_Msg_to_errInfo(LINENUM, ERR_VARTYPE_CONFUSING, error_msg_buf);
+
+								error_code |= ERR_VARTYPE_CONFUSING;
+							}
+							if(strncmp(head->var_type, "F", 1) != 0)
+							{
+								memset(error_msg_buf, 0, ERROR_MSG_LENGTH);
+								snprintf(error_msg_buf, ERROR_MSG_LENGTH, "\"'%s' is float, but type of '%s' is '%s'\"", tmp, var_name, head->var_type);
+								set_Msg_to_errInfo(LINENUM, ERR_VARTYPE_CONFUSING, error_msg_buf);
+
+								error_code |= ERR_VARTYPE_CONFUSING;
+							}
+						}
+						else if(n > 1 || ex_flag)
 						{
 							memset(error_msg_buf, 0, ERROR_MSG_LENGTH);
-							snprintf(error_msg_buf, ERROR_MSG_LENGTH, "\"'%s' is float, but type of '%s' is '%s'\"", tmp, var_name, head->var_type);
+							snprintf(error_msg_buf, ERROR_MSG_LENGTH, "\"invalid value '%s'\"", tmp);
 							set_Msg_to_errInfo(LINENUM, ERR_VARTYPE_CONFUSING, error_msg_buf);
-							err_flag = 1;
-						}
-					}
-					else if(n > 1 || ex_flag)
-					{
-						memset(error_msg_buf, 0, ERROR_MSG_LENGTH);
-						snprintf(error_msg_buf, ERROR_MSG_LENGTH, "\"invalid value '%s'\"", tmp);
-						set_Msg_to_errInfo(LINENUM, ERR_VARTYPE_CONFUSING, error_msg_buf);
-						err_flag = 1;
-					}
 
-					if(*cp == ',')
-						cp ++;
+							error_code |= ERR_VARTYPE_CONFUSING;
+						}
+
+						if(*cp == ',')
+							cp ++;
 					}
+				}
 			}
 		}
 		else	//非数组
 		{
 			memset(tmp, 0, 16);
+
 			cp = strchr(line, '=');
 			cp ++;
-			while(isspace((int) *cp) && (*cp != '\0'))
+			while(((*cp == ' ') || (*cp == '\t') || (*cp == '\r')) && (*cp != '\0'))
 			{
 				cp ++;
 			}
 			cq = cp;
-			if(*cp == ';' || *cp == '\0')
+			if(*cp == ';' || *cp == '\n' || *cp == '\0')
 			{
 				memset(error_msg_buf, 0, ERROR_MSG_LENGTH);
 				snprintf(error_msg_buf, ERROR_MSG_LENGTH, "\"invalid initial value or no initial value next to '='\"");
 				set_Msg_to_errInfo(LINENUM, ERR_FORMAT, error_msg_buf);
 
-				err_flag =1;
+				error_code |= ERR_FORMAT;
 			}
 			while((!isspace((int) *cp)) && (*cp != ';') && (*cp != '\0'))
 			{
 				cp ++;
 				len ++;
 			}
+
 			strncpy(tmp, cq, len);
+			counter += 1;
+
+			while(isspace((int) *cp) && (*cp != ';') && (*cp != '\n') && (*cp != '\0'))
+			{
+				cp ++;
+			}
+			if(*cp != ';' && *cp != '\n' && *cp != '\0')
+			{
+				memset(error_msg_buf, 0, ERROR_MSG_LENGTH);
+				snprintf(error_msg_buf, ERROR_MSG_LENGTH, "\"invalid initial value\"");
+				set_Msg_to_errInfo(LINENUM, ERR_FORMAT, error_msg_buf);
+
+				error_code |= ERR_FORMAT;
+			}
+
+			if((tmp[0] > '9' || tmp[0] < '0') && tmp[0] != '-')
+				ex_flag = 1;
 
 			for(i = 0; i < strlen(tmp); i ++)
 			{
@@ -468,12 +520,22 @@ int init_value_type_check(char *line, char *var_name)
 			}
 			if(n == 1 && !ex_flag)	//正确的浮点数
 			{
+				cp = strchr(tmp, '.');
+				if(*(cp + 1) > '9' || *(cp + 1) < '0')
+				{
+					memset(error_msg_buf, 0, ERROR_MSG_LENGTH);
+					snprintf(error_msg_buf, ERROR_MSG_LENGTH, "\"invalid value '%s'\"", tmp);
+					set_Msg_to_errInfo(LINENUM, ERR_VARTYPE_CONFUSING, error_msg_buf);
+
+					error_code |= ERR_VARTYPE_CONFUSING;
+				}
 				if(strncmp(head->var_type, "F", 1) != 0)
 				{
 					memset(error_msg_buf, 0, ERROR_MSG_LENGTH);
 					snprintf(error_msg_buf, ERROR_MSG_LENGTH, "\"'%s' is float, but type of '%s' is '%s'\"", tmp, var_name, head->var_type);
 					set_Msg_to_errInfo(LINENUM, ERR_VARTYPE_CONFUSING, error_msg_buf);
-					err_flag = 1;
+
+					error_code |= ERR_VARTYPE_CONFUSING;
 				}
 			}
 			else if(n > 1 || ex_flag)
@@ -481,12 +543,23 @@ int init_value_type_check(char *line, char *var_name)
 				memset(error_msg_buf, 0, ERROR_MSG_LENGTH);
 				snprintf(error_msg_buf, ERROR_MSG_LENGTH, "\"invalid value '%s'\"", tmp);
 				set_Msg_to_errInfo(LINENUM, ERR_VARTYPE_CONFUSING, error_msg_buf);
-				err_flag = 1;
+
+				error_code |= ERR_VARTYPE_CONFUSING;
 			}
+		}
+
+		n = arr_excess_check(line);
+		if(n < counter)
+		{
+			memset(error_msg_buf, 0, ERROR_MSG_LENGTH);
+			snprintf(error_msg_buf, ERROR_MSG_LENGTH, "\"somewhere missing ','\"");
+			set_Msg_to_errInfo(LINENUM, ERR_FORMAT, error_msg_buf);
+
+			error_code |= ERR_FORMAT;
 		}
 	}
 
-	return err_flag;
+	return error_code;
 }
 
 int variable_format_check(char *var_name_b)
@@ -650,21 +723,6 @@ int arr_format_check(char *line)
 	}
 
 	return 0;
-}
-
-int arr_excess_check(char *line)
-{
-	int len;
-	int i, n = 0;
-
-	len = strlen(line);
-	for(i = 0; i < len; i ++)
-	{
-		if(*(line + i) == ',')
-			n += 1;
-	}
-
-	return (n + 1);
 }
 
 int endsymbol_check(char *line)
@@ -1280,9 +1338,16 @@ int scripts_checkout(const char *scripts)
 					error_code |= ERR_VARTYPE_CONFUSING;
 				}
 				//检测所赋的值是否与变量类型相对应，只需检查浮点型即可	
-				if(init_value_type_check(line, var_name))
+				if(n = init_value_type_check(line, var_name))
 				{
-					error_code |= ERR_VARTYPE_CONFUSING;	
+					if(n & ERR_VARTYPE_CONFUSING)
+					{
+						error_code |= ERR_VARTYPE_CONFUSING;	
+					}
+					if(n & ERR_FORMAT)
+					{
+						error_code |= ERR_FORMAT;	
+					}
 				}
 				if(!strcmp(cmds, "VAR"))
 				{
@@ -2398,23 +2463,33 @@ void show_cmdInfo(void)
 	}
 }
 
+void show_params_defined(void)
+{
+	int i;
+
+	printf("Defined params:\n");
+	printf("variable name\tvariable type\tvariable counter\n");
+	for(i = 0; params_definfo[i].var_count != 0; i ++)
+		printf("%s\t\t%s\t\t%d\n", params_definfo[i].var_name, params_definfo[i].var_type, params_definfo[i].var_count);
+}
+
 int main()
 {
 	int error_code = 0;
 	char *scripts =	"VARS W AI[12];\n"\
-					"	VARS B DI[4] = {2, 3, 5, 8};\n"\
+					"	VARS B DI[4] = {2, 3	,5, 	8	};\n"\
 					"VAR F tmp;\n"\
 					"\n"\
 					"   \n"\
 					"	\n"\
 					"VAR F DA;\n"\
-					"VAR W wspd;\n"\
+					"VAR W wspd = 5 	;\n"\
 					"VAR F TEMP_V;\n"\
 					"VAR F MAIN_VOL;\n"\
 					"VAR F BATTERY_VOL;\n"\
-					"VARS 	F UDI01[17] = {1, -2.2};\n"\
+					"VARS 	F UDI01[17] = {1 ,-2.4};\n"\
 					"VARS F UAI02[17];\n"\
-					"INTF 1004 F wspdx;\n"\
+					"INTF 1004 F wspdx = 5.7 ;\n"\
 					"INTFS 2018 F wsdu[2];\n"\
 					"INTFS 2019 F AIV[2];\n"\
 					"CTRL 4000 B LDO1;\n"\
@@ -2448,8 +2523,8 @@ int main()
 					"SLEEP 1000;";
 
 	error_code = scripts_checkout(scripts);
-	//show_cmdInfo();
-	//show_params_defined();
+//	show_cmdInfo();
+//	show_params_defined();
 	if(error_code)
 	{
 		show_errMsg();	
