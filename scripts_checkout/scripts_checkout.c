@@ -60,24 +60,36 @@ int scripts_getline(char *line, const char *scripts)
 	memset(line, 0, LINE_SIZE);
 
 	//读取当前行
-	while((scripts[cur_index] != '\n') && (scripts[cur_index] != '\0') && (i <= LINE_SIZE))
+	while((scripts[cur_index] != '\n') && (scripts[cur_index] != '\0') && (i < LINE_SIZE))
 	{
 		line[i ++] = scripts[cur_index ++];
 	}
-	if(i > LINE_SIZE)
+	if(i >= LINE_SIZE)
 	{
 		LINENUM ++;
 		return i;
 	}
 
 	if(scripts[cur_index] == '\n')
+	{
 		line[i] = scripts[cur_index];
+
+		cur_index ++;	//cur_index++是为了指向'\n'的后一个字符，即下一行开头
+
+		LINENUM ++;	//指向下一行
+
+//		printf("line:%s, %d\n", line, i + 1);
+
+		return (i + 1);
+	}
+
 	cur_index ++;	//cur_index++是为了指向'\n'的后一个字符，即下一行开头
 
 	LINENUM ++;	//指向下一行
 
-	//printf("line:%s, %ld\n", line, strlen(line));
-	return strlen(line);
+//	printf("line:%s, %d\n", line, i);
+
+	return i;
 }
 
 void add_cmd_to_cmdInfo(char *cmd)
@@ -123,6 +135,15 @@ void show_errMsg(void)
 		//syslog(LOG_ERR, "[Scritps error]:%s at line %d, ERROR_CODE[%d]", err_infolist[i].error_msg, err_infolist[i].linenum, err_infolist[i].error_code);
 }
 
+void show_params_defined(void)
+{
+	int i;
+
+	printf("Defined params:\n");
+	for(i = 0; params_definfo[i].var_count != 0; i ++)
+		printf("%s\t%s\t%d\n", params_definfo[i].var_name, params_definfo[i].var_type, params_definfo[i].var_count);
+}
+
 char *get_cmd(char *cmd, char *line)
 {
 #if 0
@@ -150,14 +171,14 @@ loop:
 	int i = 0, len = 0;
 
 	cp = line;
-	while((isspace((int) *cp) || *cp == '	') && (*cp != '\0'))
+	while(isspace((int) *cp) && (*cp != '\0'))
 	{
 		cp ++;
 	}
 	cq = cp;
 	if(*cp != '\0')
 	{
-		while((!isspace((int) *cp) && (*cp != '(') && (*cp != '\r') && (*cp != '	') && (*cp != ';')) && (*cp != '\0'))
+		while((!isspace((int) *cp) && (*cp != '(') && (*cp != ';')) && (*cp != '\0'))
 		{
 			cp ++;
 			len ++;
@@ -173,6 +194,7 @@ int get_varname(char *var_name, char *buf)
 {
 	char *p, *q, *nv, *nvp, var_count[8] = {0};
 	int i = 0, j = 0, count = 0;
+	char tmp_name[32] = {0};
 
 	nv = nvp = strdup(buf);
 	if(strchr(buf, '='))
@@ -181,13 +203,13 @@ int get_varname(char *var_name, char *buf)
 
 		if(q = strchr(buf, '['))
 		{
-			while((*(p + i) != ' ') && (*(p + i) != '[') && (*(p + i) != '\n') && (*(p + i) != 0))
+			while((*(p + i) != ' ') && (*(p + i) != '[') && (*(p + i) != '\n') && (*(p + i) != '\0'))
 			{
-				var_name[i] = p[i];
+				tmp_name[i] = p[i];
 				i ++;
 			}
 
-			for(i = 1; *(q + i) != ']'; i ++, j ++)
+			for(i = 1; *(q + i) != ']' && *(q + i) != '\0'; i ++, j ++)
 			{
 				var_count[j] = q[i];
 			}
@@ -196,9 +218,9 @@ int get_varname(char *var_name, char *buf)
 		}
 		else
 		{
-			while((*(p + i) != ' ') && (*(p + i) != '\n') && (*(p + i) != 0))
+			while((*(p + i) != ' ') && (*(p + i) != '\n') && (*(p + i) != '\0'))
 			{
-				var_name[i] = p[i];
+				tmp_name[i] = p[i];
 				i ++;
 			}
 
@@ -211,13 +233,13 @@ int get_varname(char *var_name, char *buf)
 
 		if(q = strchr(buf, '['))
 		{
-			while((*(p + i) != ' ') && (*(p + i) != '[') && (*(p + i) != '\n') && (*(p + i) != 0))
+			while((*(p + i) != ' ') && (*(p + i) != '[') && (*(p + i) != '\n') && (*(p + i) != '\0'))
 			{
-				var_name[i] = p[i];
+				tmp_name[i] = p[i];
 				i ++;
 			}
 
-			for(i = 1; (*(q + i) != ']'); i ++, j ++)
+			for(i = 1; (*(q + i) != ']') && *(q + i) != '\0'; i ++, j ++)
 			{
 				var_count[j] = q[i];
 			}
@@ -226,9 +248,9 @@ int get_varname(char *var_name, char *buf)
 		}
 		else
 		{
-			while((*(p + i) != ' ') && (*(p + i) != '\n') && (*(p + i) != 0))
+			while((*(p + i) != ' ') && (*(p + i) != '\n') && (*(p + i) != '\0'))
 			{
-				var_name[i] = p[i];
+				tmp_name[i] = p[i];
 				i ++;
 			}
 
@@ -236,6 +258,8 @@ int get_varname(char *var_name, char *buf)
 		}
 	}
 	free(nv);
+
+	strncpy(var_name, tmp_name, 32);
 
 	return count;
 }
@@ -340,7 +364,7 @@ int init_value_type_check(char *line, char *var_name)
 	params_defined_info *head;
 	char *cp, *cq, tmp[16];
 	int i = 0, len = 0, n = 0;
-	int err_flag = 0;
+	int err_flag = 0, ex_flag = 0;
 
 	head = get_params_info(var_name);
 	if(strchr(line, '='))
@@ -354,50 +378,56 @@ int init_value_type_check(char *line, char *var_name)
 			{
 				memset(tmp, 0, 16);
 				len = 0;
-				while(isspace((int) *cp) || (*cp == '\t'))
+				while(isspace((int) *cp) && (*cp != '\0'))
 				{
 					cp ++;
 				}
 				cq = cp;
-				if(*cp == '}')
+				if(*cp == '}' || *cp == ';' || *cp == '\0')
 				{
 					break;
 				}
 				else
 				{
-					while((!isspace((int) *cp) && (*cp != '\t') && (*cp != ',')) && (*cp != '}'))
+					while((!isspace((int) *cp) && (*cp != ',')) && (*cp != '}') && (*cp != ';') && (*cp != '\0'))
 					{
 						cp ++;
 						len ++;
 					}
 					strncpy(tmp, cq, len);
-				}
 
-				for(i = 0; i < strlen(tmp); i ++)
-				{
-					if(*(tmp + i) == '.')
-						n ++;
-				}
-				if(n == 1)
-				{
-					if(strncmp(head->var_type, "F", 1) != 0)
+					for(i = 0; i < strlen(tmp); i ++)
+					{
+						if(*(tmp + i) == '.')
+							n ++;
+
+						if((*(tmp + i) > '9' || *(tmp + i) < '0') 
+								&& (*(tmp + i) != '.' && *(tmp + i) != '-'))
+						{
+							ex_flag = 1;	
+						}
+					}
+					if(n == 1 && !ex_flag)
+					{
+						if(strncmp(head->var_type, "F", 1) != 0)
+						{
+							memset(error_msg_buf, 0, ERROR_MSG_LENGTH);
+							snprintf(error_msg_buf, ERROR_MSG_LENGTH, "\"'%s' is float, but type of '%s' is '%s'\"", tmp, var_name, head->var_type);
+							set_Msg_to_errInfo(LINENUM, ERR_VARTYPE_CONFUSING, error_msg_buf);
+							err_flag = 1;
+						}
+					}
+					else if(n > 1 || ex_flag)
 					{
 						memset(error_msg_buf, 0, ERROR_MSG_LENGTH);
-						snprintf(error_msg_buf, ERROR_MSG_LENGTH, "\"'%s' is float, but type of '%s' is '%s'\"", tmp, var_name, head->var_type);
+						snprintf(error_msg_buf, ERROR_MSG_LENGTH, "\"invalid value '%s'\"", tmp);
 						set_Msg_to_errInfo(LINENUM, ERR_VARTYPE_CONFUSING, error_msg_buf);
 						err_flag = 1;
 					}
-				}
-				else if(n > 1)
-				{
-					memset(error_msg_buf, 0, ERROR_MSG_LENGTH);
-					snprintf(error_msg_buf, ERROR_MSG_LENGTH, "\"invalid value '%s'\"", tmp);
-					set_Msg_to_errInfo(LINENUM, ERR_VARTYPE_CONFUSING, error_msg_buf);
-					err_flag = 1;
-				}
 
-				if(*cp == ',')
-					cp ++;
+					if(*cp == ',')
+						cp ++;
+					}
 			}
 		}
 		else	//非数组
@@ -405,12 +435,20 @@ int init_value_type_check(char *line, char *var_name)
 			memset(tmp, 0, 16);
 			cp = strchr(line, '=');
 			cp ++;
-			while(isspace((int) *cp) || (*cp == '\t'))
+			while(isspace((int) *cp) && (*cp != '\0'))
 			{
 				cp ++;
 			}
 			cq = cp;
-			while((!isspace((int) *cp) && (*cp != '\t')) && (*cp != ';'))
+			if(*cp == ';' || *cp == '\0')
+			{
+				memset(error_msg_buf, 0, ERROR_MSG_LENGTH);
+				snprintf(error_msg_buf, ERROR_MSG_LENGTH, "\"invalid initial value or no initial value next to '='\"");
+				set_Msg_to_errInfo(LINENUM, ERR_FORMAT, error_msg_buf);
+
+				err_flag =1;
+			}
+			while((!isspace((int) *cp)) && (*cp != ';') && (*cp != '\0'))
 			{
 				cp ++;
 				len ++;
@@ -421,8 +459,14 @@ int init_value_type_check(char *line, char *var_name)
 			{
 				if(*(tmp + i) == '.')
 					n ++;
+
+				if((*(tmp + i) > '9' || *(tmp + i) < '0') 
+						&& (*(tmp + i) != '.' && *(tmp + i) != '-'))
+				{
+					ex_flag = 1;	
+				}
 			}
-			if(n == 1)
+			if(n == 1 && !ex_flag)	//正确的浮点数
 			{
 				if(strncmp(head->var_type, "F", 1) != 0)
 				{
@@ -432,7 +476,7 @@ int init_value_type_check(char *line, char *var_name)
 					err_flag = 1;
 				}
 			}
-			else if(n > 1)
+			else if(n > 1 || ex_flag)
 			{
 				memset(error_msg_buf, 0, ERROR_MSG_LENGTH);
 				snprintf(error_msg_buf, ERROR_MSG_LENGTH, "\"invalid value '%s'\"", tmp);
@@ -443,21 +487,42 @@ int init_value_type_check(char *line, char *var_name)
 	}
 
 	return err_flag;
-/*
-	if(strchr(line, '='))
+}
+
+int variable_format_check(char *var_name_b)
+{
+	params_defined_info *head;
+	char var_name[32] = {0};
+	int len = 0, error_code = 0;
+	int i;
+	
+	for(i = 0; i < strlen(var_name_b); i ++)
 	{
-		if(strchr(line, '.'))
+		if(*(var_name_b + i) == '[')
+			len += 1;		
+	}
+
+	get_varname(var_name, var_name_b);
+	head = get_params_info(var_name);
+	if(head->var_count > 1)
+	{
+		if(len == 0)
 		{
-			//检查变量类型是否是F
-			head = get_params_info(var_name);
-			if(strncmp(head->var_type, "F", 1) != 0)
-			{
-				memset(error_msg_buf, 0, ERROR_MSG_LENGTH);
-				snprintf(error_msg_buf, ERROR_MSG_LENGTH, "\"initializer has float value, but type of '%s' is '%s'\"", var_name, head->var_type);
-				set_Msg_to_errInfo(LINENUM, ERR_VARTYPE_CONFUSING, error_msg_buf);
-			}
+			memset(error_msg_buf, 0, ERROR_MSG_LENGTH);
+			snprintf(error_msg_buf, ERROR_MSG_LENGTH, "\"expected '[]' for '%s'\"", var_name);
+			set_Msg_to_errInfo(LINENUM, ERR_DEFVAR_CONFUSING, error_msg_buf);
+			error_code |= ERR_DEFVAR_CONFUSING;	
 		}
-	}*/
+		else if(len > 1)
+		{
+			memset(error_msg_buf, 0, ERROR_MSG_LENGTH);
+			snprintf(error_msg_buf, ERROR_MSG_LENGTH, "\"V20 only support one-demensional array\"");
+			set_Msg_to_errInfo(LINENUM, ERR_FORMAT, error_msg_buf);
+			error_code |= ERR_FORMAT;	
+		}
+	}
+
+	return error_code;
 }
 
 int brackets_check(char *line)
@@ -491,6 +556,37 @@ int brackets_check(char *line)
 		set_Msg_to_errInfo(LINENUM, ERR_FORMAT, error_msg_buf);
 
 		return 1;
+	}
+
+	return 0;
+}
+
+int check_equals(char *line)
+{
+	int len = strlen(line);
+	int i, num = 0;
+	char cmd[32] = {0};
+
+	get_cmd(cmd, line);
+	if(strchr(line, '='))
+	{
+		for(i = 0; i < len; i ++)
+		{
+			if(*(line + i) == '=')
+				num += 1;
+		}
+
+		if(strcmp(cmd, "IF"))
+		{
+			if(num > 1)
+			{
+				memset(error_msg_buf, 0, ERROR_MSG_LENGTH);
+				snprintf(error_msg_buf, ERROR_MSG_LENGTH, "\"too more '='\"");
+				set_Msg_to_errInfo(LINENUM, ERR_FORMAT, error_msg_buf);
+
+				return 1;
+			}
+		}
 	}
 
 	return 0;
@@ -537,13 +633,13 @@ int arr_format_check(char *line)
 	len = strlen(p);
 	for(i = 0, j = 0; i < len; i ++)
 	{
-		if(*(p + i) != ' ')
+		if(!isspace((int) *(p + i)) && *(p + i) != '\0')
 			tmp[j++] = p[i];
 	}
 
 	for(i = 0; i < strlen(tmp) - 1; i ++)
 	{
-		if(((*(tmp + i) == ',') || (*(tmp + i) == '{')) && (*(tmp + i + 1) == ','))	
+		if(((*(tmp + i) == ',') || (*(tmp + i) == '{')) && ((*(tmp + i + 1) == ',') || (*(tmp + i + 1) == '}'))) 
 		{
 			memset(error_msg_buf, 0, ERROR_MSG_LENGTH);
 			snprintf(error_msg_buf, ERROR_MSG_LENGTH, "\"invalid format in array initializer\"");
@@ -568,10 +664,7 @@ int arr_excess_check(char *line)
 			n += 1;
 	}
 
-	if(n == 0)
-		return 0;
-	else
-		return (n + 1);
+	return (n + 1);
 }
 
 int endsymbol_check(char *line)
@@ -632,7 +725,12 @@ int endsymbol_check(char *line)
 			}
 
 			l = strrchr(line, ';');
-			if((*(l + 1) != ' ') && (*(l + 1) != '\n') && (*(l + 1) != '	') && (*(l + 1) != '\0'))
+			l ++; 
+			while((*l == ' ') && (*l == '\t') && (*l == '\r') && (*l != '\0'))
+			{
+				l ++;
+			}
+			if((*l != '\n') && (*l != '\0'))
 			{
 				memset(error_msg_buf, 0, ERROR_MSG_LENGTH);
 				snprintf(error_msg_buf, ERROR_MSG_LENGTH, "\"too more excuting statements in one line\"");
@@ -717,15 +815,15 @@ int cal_format_check(char *line)
 {
 	//两个操作符不能相邻，数字不能被分隔开(此处包括空格和TAB键)，例如3 * 5 78 /+ 2	1之类的
 	char *op_characters[] = {"~", "+", "-", "*", "/", "&", "|", "^", "<<", ">>", NULL};
-	char **p, tmp[3];
+	char **p, tmp[8];
 	int i = 0, op_flag = 0;
 	int error_flag = 0;
 
 	while(*(line + i))
 	{
 		p = op_characters;
-		memset(tmp, 0, 3);
-		if(!isspace((int) *(line+i)) && *(line + i) != '\t')
+		memset(tmp, 0, sizeof(tmp));
+		if(!isspace((int) *(line + i)))
 		{
 			if(*(line + i) == '>')
 			{
@@ -757,9 +855,18 @@ int cal_format_check(char *line)
 					error_flag = 1;
 				}
 			}
-			else
+			else 
 			{
 				tmp[0] = *(line + i);
+			}
+
+			if(*(line + i) == '-')	//区分减号还是负号
+			{
+				if((*(line + i + 1) >= '0') && (*(line + i + 1) <= '9'))	
+				{
+					i ++;
+					continue;
+				}
 			}
 
 			if(op_flag)
@@ -968,6 +1075,51 @@ int brackets_exist_check(char *str)	//only for IF
 		return 2;
 }
 
+int existIFbefore_check(char *cmd)
+{
+	char (*p)[16] = cmd_info;
+	int err_flag = 0, noif_flag = 1, nomatch_flag = 0;
+	int if_count = 0, cmd_count = 0;
+
+	while(strlen(*p) != 0)
+	{
+		if(!strcmp(*p, "IF"))
+		{
+			if_count += 1;
+			noif_flag = 0;
+		}
+		if(!strcmp(*p, cmd))
+		{
+			cmd_count += 1;
+		}
+
+		p ++;
+	}
+
+	if(noif_flag)
+	{
+		memset(error_msg_buf, 0, ERROR_MSG_LENGTH);
+		snprintf(error_msg_buf, ERROR_MSG_LENGTH, "\"no 'IF' before '%s'\"", cmd);
+		set_Msg_to_errInfo(LINENUM, ERR_IFCMD_NO_MATCH, error_msg_buf);
+	}
+
+	if(if_count != cmd_count && !noif_flag && strcmp(cmd, "ELSE"))	//ELSE不是IF所必须的，故不用报此错
+	{
+		memset(error_msg_buf, 0, ERROR_MSG_LENGTH);
+		snprintf(error_msg_buf, ERROR_MSG_LENGTH, "\"'IF' don't match '%s'\"", cmd);
+		set_Msg_to_errInfo(LINENUM, ERR_IFCMD_NO_MATCH, error_msg_buf);
+
+		nomatch_flag = 1;
+	}
+
+	if(noif_flag || nomatch_flag)
+	{
+		err_flag = 1;
+	}
+
+	return err_flag;
+}
+
 int NestofIF_check(void)
 {
 	char (*p)[16], (*q)[16];
@@ -1007,9 +1159,12 @@ int NestofIF_check(void)
 	}
 
 //	printf("if:%d, endif:%d\n", if_index, endif_index);
-	if((if_index < endif_index) || ((if_index != 0) && (endif_index == 0)))	//说明嵌套超过3层了
+	if(if_index != 0)
 	{
-		return 1;	
+		if((if_index < endif_index) || (endif_index == 0))	//说明嵌套超过3层了
+		{
+			return 1;	
+		}
 	}
 
 	return 0;
@@ -1038,11 +1193,11 @@ int scripts_checkout(const char *scripts)
 		return error_code;
 	}
 
-	memset(line, 0, LINE_SIZE);
 	while(cur_size < total_size)
 	{
+		memset(line, 0, LINE_SIZE);
 		line_size = scripts_getline(line, scripts);
-		if(line_size > LINE_SIZE)
+		if(line_size >= LINE_SIZE)
 		{
 			memset(error_msg_buf, 0, ERROR_MSG_LENGTH);
 			snprintf(error_msg_buf, ERROR_MSG_LENGTH, "\"too much size for one line\"");
@@ -1055,7 +1210,7 @@ int scripts_checkout(const char *scripts)
 		cur_size += line_size;
 
 		cp = line;
-		while((isspace((int) *cp) || *cp == '\n' || *cp =='\r') && *cp != '\0')
+		while(isspace((int) *cp) && *cp != '\0')
 		{
 			cp++;
 		}
@@ -1079,6 +1234,11 @@ int scripts_checkout(const char *scripts)
 		}
 		
 		if(brackets_check(line))	//检查括号是否成对
+		{
+			error_code |= ERR_FORMAT;
+		}
+
+		if(check_equals(line))
 		{
 			error_code |= ERR_FORMAT;
 		}
@@ -1133,43 +1293,20 @@ int scripts_checkout(const char *scripts)
 						set_Msg_to_errInfo(LINENUM, ERR_DEFVAR_CONFUSING, error_msg_buf);
 						error_code |= ERR_DEFVAR_CONFUSING;	
 					}
-					if(p = strchr(line, '='))
-					{
-						p ++;
-						while(isspace((int) *p))
-						{
-							p ++;
-						}
-						if((*p < '0') || (*p > '9'))
-						{
-							memset(error_msg_buf, 0, ERROR_MSG_LENGTH);
-							snprintf(error_msg_buf, ERROR_MSG_LENGTH, "\"no initial value next to '='\"");
-							set_Msg_to_errInfo(LINENUM, ERR_FORMAT, error_msg_buf);
-							error_code |= ERR_FORMAT;	
-						}
-					}
 				}
 				if(!strcmp(cmds, "VARS"))
 				{
-					len = 0;
-					for(i = 0; i < strlen(var_name_b); i ++)
+					//检查数组变量格式
+					if(n = variable_format_check(var_name_b))
 					{
-						if(*(var_name_b + i) == '[')
-							len += 1;		
-					}
-					if(len == 0)
-					{
-						memset(error_msg_buf, 0, ERROR_MSG_LENGTH);
-						snprintf(error_msg_buf, ERROR_MSG_LENGTH, "\"expected '[]' for 'VARS'\"");
-						set_Msg_to_errInfo(LINENUM, ERR_DEFVAR_CONFUSING, error_msg_buf);
-						error_code |= ERR_DEFVAR_CONFUSING;	
-					}
-					else if(len > 1)
-					{
-						memset(error_msg_buf, 0, ERROR_MSG_LENGTH);
-						snprintf(error_msg_buf, ERROR_MSG_LENGTH, "\"V20 only support one-demensional array\"");
-						set_Msg_to_errInfo(LINENUM, ERR_FORMAT, error_msg_buf);
-						error_code |= ERR_FORMAT;	
+						if(n & ERR_DEFVAR_CONFUSING)
+						{
+							error_code |= ERR_DEFVAR_CONFUSING;
+						}
+						if(n & ERR_FORMAT)
+						{
+							error_code |= ERR_FORMAT;
+						}
 					}
 					//若变量为AI或DI，检查寄存器定义是否越界
 					if(aidi_reg_check(var_name, var_count))
@@ -1182,7 +1319,7 @@ int scripts_checkout(const char *scripts)
 						if(strchr(line, '{') == NULL)
 						{
 							memset(error_msg_buf, 0, ERROR_MSG_LENGTH);
-							snprintf(error_msg_buf, ERROR_MSG_LENGTH, "\"no initial value next to '='\"");
+							snprintf(error_msg_buf, ERROR_MSG_LENGTH, "\"invalid initial value or no initial value next to '='\"");
 							set_Msg_to_errInfo(LINENUM, ERR_FORMAT, error_msg_buf);
 							error_code |= ERR_FORMAT;	
 						}
@@ -1285,43 +1422,20 @@ int scripts_checkout(const char *scripts)
 						set_Msg_to_errInfo(LINENUM, ERR_DEFVAR_CONFUSING, error_msg_buf);
 						error_code |= ERR_DEFVAR_CONFUSING;	
 					}
-					if(p = strchr(line, '='))
-					{
-						p ++;
-						while(isspace((int) *p))
-						{
-							p ++;
-						}
-						if((*p < '0') || (*p > '9'))
-						{
-							memset(error_msg_buf, 0, ERROR_MSG_LENGTH);
-							snprintf(error_msg_buf, ERROR_MSG_LENGTH, "\"no initial value next to '='\"");
-							set_Msg_to_errInfo(LINENUM, ERR_FORMAT, error_msg_buf);
-							error_code |= ERR_FORMAT;	
-						}
-					}
 				}
 				if(!strcmp(cmds, "INTFS"))
 				{
-					len = 0;
-					for(i = 0; i < strlen(var_name_b); i ++)
+					//检查数组变量格式
+					if(n = variable_format_check(var_name_b))
 					{
-						if(*(var_name_b + i) == '[')
-							len += 1;		
-					}
-					if(len == 0)
-					{
-						memset(error_msg_buf, 0, ERROR_MSG_LENGTH);
-						snprintf(error_msg_buf, ERROR_MSG_LENGTH, "\"expected '[]' for 'VARS'\"");
-						set_Msg_to_errInfo(LINENUM, ERR_DEFVAR_CONFUSING, error_msg_buf);
-						error_code |= ERR_DEFVAR_CONFUSING;	
-					}
-					else if(len > 1)
-					{
-						memset(error_msg_buf, 0, ERROR_MSG_LENGTH);
-						snprintf(error_msg_buf, ERROR_MSG_LENGTH, "\"V20 only support one-demensional array\"");
-						set_Msg_to_errInfo(LINENUM, ERR_FORMAT, error_msg_buf);
-						error_code |= ERR_FORMAT;	
+						if(n & ERR_DEFVAR_CONFUSING)
+						{
+							error_code |= ERR_DEFVAR_CONFUSING;
+						}
+						if(n & ERR_FORMAT)
+						{
+							error_code |= ERR_FORMAT;
+						}
 					}
 					//若变量为AI或DI，检查寄存器定义是否越界
 					if(aidi_reg_check(var_name, var_count))
@@ -1334,7 +1448,7 @@ int scripts_checkout(const char *scripts)
 						if(strchr(line, '{') == NULL)
 						{
 							memset(error_msg_buf, 0, ERROR_MSG_LENGTH);
-							snprintf(error_msg_buf, ERROR_MSG_LENGTH, "\"no initial value next to '='\"");
+							snprintf(error_msg_buf, ERROR_MSG_LENGTH, "\"invalid initial value or no initial value next to '='\"");
 							set_Msg_to_errInfo(LINENUM, ERR_FORMAT, error_msg_buf);
 							error_code |= ERR_FORMAT;	
 						}
@@ -1418,7 +1532,11 @@ int scripts_checkout(const char *scripts)
 				{
 					error_code |= ERR_DEFVAR_CONFLICTING;
 				}
-				
+				//检测所赋的值是否与变量类型相对应，只需检查浮点型即可	
+				if(init_value_type_check(line, var_name))
+				{
+					error_code |= ERR_VARTYPE_CONFUSING;	
+				}
 				if(!strcmp(cmds, "CTRL"))
 				{
 					if(strchr(var_name_b, '[') != NULL)
@@ -1428,48 +1546,20 @@ int scripts_checkout(const char *scripts)
 						set_Msg_to_errInfo(LINENUM, ERR_DEFVAR_CONFUSING, error_msg_buf);
 						error_code |= ERR_DEFVAR_CONFUSING;	
 					}
-					if(p = strchr(line, '='))
-					{
-						p ++;
-						while(isspace((int) *p))
-						{
-							p ++;
-						}
-						if((*p < '0') || (*p > '9'))
-						{
-							memset(error_msg_buf, 0, ERROR_MSG_LENGTH);
-							snprintf(error_msg_buf, ERROR_MSG_LENGTH, "\"no initial value next to '='\"");
-							set_Msg_to_errInfo(LINENUM, ERR_FORMAT, error_msg_buf);
-							error_code |= ERR_FORMAT;	
-						}
-						//检测所赋的值是否与变量类型相对应，只需检查浮点型即可	
-						if(init_value_type_check(line, var_name))
-						{
-							error_code |= ERR_VARTYPE_CONFUSING;	
-						}
-					}
 				}
 				if(!strcmp(cmds, "CTRLS"))
 				{
-					len = 0;
-					for(i = 0; i < strlen(var_name_b); i ++)
+					//检查数组变量格式
+					if(n = variable_format_check(var_name_b))
 					{
-						if(*(var_name_b + i) == '[')
-							len += 1;		
-					}
-					if(len == 0)
-					{
-						memset(error_msg_buf, 0, ERROR_MSG_LENGTH);
-						snprintf(error_msg_buf, ERROR_MSG_LENGTH, "\"expected '[]' for 'VARS'\"");
-						set_Msg_to_errInfo(LINENUM, ERR_DEFVAR_CONFUSING, error_msg_buf);
-						error_code |= ERR_DEFVAR_CONFUSING;	
-					}
-					else if(len > 1)
-					{
-						memset(error_msg_buf, 0, ERROR_MSG_LENGTH);
-						snprintf(error_msg_buf, ERROR_MSG_LENGTH, "\"V20 only support one-demensional array\"");
-						set_Msg_to_errInfo(LINENUM, ERR_FORMAT, error_msg_buf);
-						error_code |= ERR_FORMAT;	
+						if(n & ERR_DEFVAR_CONFUSING)
+						{
+							error_code |= ERR_DEFVAR_CONFUSING;
+						}
+						if(n & ERR_FORMAT)
+						{
+							error_code |= ERR_FORMAT;
+						}
 					}
 
 					if(strchr(line, '='))
@@ -1543,6 +1633,11 @@ int scripts_checkout(const char *scripts)
 				{
 					error_code |= ERR_DEFVAR_CONFLICTING;
 				}
+				//检测所赋的值是否与变量类型相对应，只需检查浮点型即可	
+				if(init_value_type_check(line, var_name))
+				{
+					error_code |= ERR_VARTYPE_CONFUSING;	
+				}
 				
 				if(!strcmp(cmds, "UCTRL"))
 				{
@@ -1553,48 +1648,20 @@ int scripts_checkout(const char *scripts)
 						set_Msg_to_errInfo(LINENUM, ERR_DEFVAR_CONFUSING, error_msg_buf);
 						error_code |= ERR_DEFVAR_CONFUSING;	
 					}
-					if(p = strchr(line, '='))
-					{
-						p ++;
-						while(isspace((int) *p))
-						{
-							p ++;
-						}
-						if((*p < '0') || (*p > '9'))
-						{
-							memset(error_msg_buf, 0, ERROR_MSG_LENGTH);
-							snprintf(error_msg_buf, ERROR_MSG_LENGTH, "\"no initial value next to '='\"");
-							set_Msg_to_errInfo(LINENUM, ERR_FORMAT, error_msg_buf);
-							error_code |= ERR_FORMAT;	
-						}
-						//检测所赋的值是否与变量类型相对应，只需检查浮点型即可	
-						if(init_value_type_check(line, var_name))
-						{
-							error_code |= ERR_VARTYPE_CONFUSING;	
-						}
-					}
 				}
 				if(!strcmp(cmds, "UCTRLS"))
 				{
-					len = 0;
-					for(i = 0; i < strlen(var_name_b); i ++)
+					//检查数组变量格式
+					if(n = variable_format_check(var_name_b))
 					{
-						if(*(var_name_b + i) == '[')
-							len += 1;		
-					}
-					if(len == 0)
-					{
-						memset(error_msg_buf, 0, ERROR_MSG_LENGTH);
-						snprintf(error_msg_buf, ERROR_MSG_LENGTH, "\"expected '[]' for 'VARS'\"");
-						set_Msg_to_errInfo(LINENUM, ERR_DEFVAR_CONFUSING, error_msg_buf);
-						error_code |= ERR_DEFVAR_CONFUSING;	
-					}
-					else if(len > 1)
-					{
-						memset(error_msg_buf, 0, ERROR_MSG_LENGTH);
-						snprintf(error_msg_buf, ERROR_MSG_LENGTH, "\"V20 only support one-demensional array\"");
-						set_Msg_to_errInfo(LINENUM, ERR_FORMAT, error_msg_buf);
-						error_code |= ERR_FORMAT;	
+						if(n & ERR_DEFVAR_CONFUSING)
+						{
+							error_code |= ERR_DEFVAR_CONFUSING;
+						}
+						if(n & ERR_FORMAT)
+						{
+							error_code |= ERR_FORMAT;
+						}
 					}
 
 					if(strchr(line, '='))
@@ -1632,6 +1699,22 @@ int scripts_checkout(const char *scripts)
 				}
 				else
 				{
+					//检查数组变量格式
+					if(strchr(var_name_b, '['))
+					{
+						if(n = variable_format_check(var_name_b))
+						{
+							if(n & ERR_DEFVAR_CONFUSING)
+							{
+								error_code |= ERR_DEFVAR_CONFUSING;
+							}
+							if(n & ERR_FORMAT)
+							{
+								error_code |= ERR_FORMAT;
+							}
+						}
+					}
+
 					var_count = get_varname(var_name, var_name_b);
 					if(var_count <= 0)
 					{
@@ -1640,14 +1723,17 @@ int scripts_checkout(const char *scripts)
 						set_Msg_to_errInfo(LINENUM, ERR_PARAM_EXCESS, error_msg_buf);
 						error_code |= ERR_PARAM_EXCESS;
 					}
-					//检查变量类型是否是F
-					head = get_params_info(var_name_b);
-					if(strncmp(head->var_type, "F", 1) != 0)
+					//检查变量类型
+					if(strchr(thr_low, '.') || strchr(thr_up, '.'))
 					{
-						memset(error_msg_buf, 0, ERROR_MSG_LENGTH);
-						snprintf(error_msg_buf, ERROR_MSG_LENGTH, "\"type of '%s' must be 'F'\"", var_name_b);
-						set_Msg_to_errInfo(LINENUM, ERR_VARTYPE_CONFUSING, error_msg_buf);
-						error_code |= ERR_VARTYPE_CONFUSING;	
+						head = get_params_info(var_name_b);
+						if(strncmp(head->var_type, "F", 1) != 0)
+						{
+							memset(error_msg_buf, 0, ERROR_MSG_LENGTH);
+							snprintf(error_msg_buf, ERROR_MSG_LENGTH, "\"threshold has float value, but type of '%s' is '%s'\"", var_name_b, head->var_type);
+							set_Msg_to_errInfo(LINENUM, ERR_VARTYPE_CONFUSING, error_msg_buf);
+							error_code |= ERR_VARTYPE_CONFUSING;	
+						}
 					}
 					//检查阈值是否前小后大
 					if(atoi(thr_low) > atoi(thr_up))
@@ -1674,18 +1760,19 @@ int scripts_checkout(const char *scripts)
 		}
 		else if(!strcmp(cmds, "CAL"))
 		{
+			i = 0;	//统计变量个数
 			if(cal_format_check(line))
 			{
 				error_code |= ERR_FORMAT;	
 			}
 
-			cp = strchr(line, ' ');
+			cp = line;
 			while(1)
 			{
 				memset(var_name, 0, 16);
 				memset(tmp_name, 0, 16);
 				len = 0;
-				while((isspace((int) *cp) || *cp == '\t' || *cp == '=' || *cp == '+' || *cp == '-' || *cp == '*' || *cp == '/'\
+				while((isspace((int) *cp) || *cp == '=' || *cp == '+' || *cp == '-' || *cp == '*' || *cp == '/'\
 					|| *cp == '~' || *cp == '&' || *cp == '|' || *cp == '^' || *cp == '<' || *cp == '>') && (*cp != '\0'))
 				{
 					cp ++;
@@ -1697,39 +1784,66 @@ int scripts_checkout(const char *scripts)
 				}
 				else
 				{
-					while(((!isspace((int) *cp)) && (*cp != '\t') && (*cp != '+') && (*cp != '-') && (*cp != '*') && (*cp != '/')\
+					while(((!isspace((int) *cp)) && (*cp != '+') && (*cp != '-') && (*cp != '*') && (*cp != '/')\
 						&& (*cp != '~') && (*cp != '&') && (*cp != '|') && (*cp != '^')\
-						&& (*cp != '<') && (*cp != '>') && (*cp != '\r') && (*cp != ';')) && (*cp != '\0'))
+						&& (*cp != '<') && (*cp != '>') && (*cp != ';')) && (*cp != '\0'))
 					{
 						cp ++;
 						len ++;
 					}
 					strncpy(tmp_name, cq, len);
 
-					if((atoi(tmp_name) == 0) && (atof(tmp_name) == 0))	//过滤常量
+					if(strcmp(tmp_name, cmds))	//过滤指令CAL
 					{
-						var_count = get_varname(var_name, tmp_name);
-						//检查变量是否定义
-						if(params_undefined_check(var_name))
+						if(tmp_name[0] < '0' || tmp_name[0] > '9')	//过滤常量
 						{
-							error_code |= ERR_PARAM_UNDEFINED;	
-						}
-						else
-						{
-							head = get_params_info(var_name);
-							if(var_count > head->var_count)
+							i ++;
+
+							//检查数组变量格式
+							if(n = variable_format_check(tmp_name))
 							{
-								memset(error_msg_buf, 0, ERROR_MSG_LENGTH);
-								snprintf(error_msg_buf, ERROR_MSG_LENGTH, "\"register beyond access for '%s'\"", var_name);
-								set_Msg_to_errInfo(LINENUM, ERR_REG_OUTBOUNDS, error_msg_buf);
-								error_code |= ERR_REG_OUTBOUNDS;
+								if(n & ERR_DEFVAR_CONFUSING)
+								{
+									error_code |= ERR_DEFVAR_CONFUSING;
+								}
+								if(n & ERR_FORMAT)
+								{
+									error_code |= ERR_FORMAT;
+								}
 							}
-							else if(var_count <= 0)
+							var_count = get_varname(var_name, tmp_name);
+							//检查变量是否定义
+							if(params_undefined_check(var_name))
 							{
-								memset(error_msg_buf, 0, ERROR_MSG_LENGTH);
-								snprintf(error_msg_buf, ERROR_MSG_LENGTH, "\"invalid element subscript for '%s'\"", var_name);
-								set_Msg_to_errInfo(LINENUM, ERR_PARAM_EXCESS, error_msg_buf);
-								error_code |= ERR_PARAM_EXCESS;
+								error_code |= ERR_PARAM_UNDEFINED;	
+							}
+							else
+							{
+								head = get_params_info(var_name);
+								if(var_count > head->var_count)
+								{
+									memset(error_msg_buf, 0, ERROR_MSG_LENGTH);
+									snprintf(error_msg_buf, ERROR_MSG_LENGTH, "\"register beyond access for '%s'\"", var_name);
+									set_Msg_to_errInfo(LINENUM, ERR_REG_OUTBOUNDS, error_msg_buf);
+									error_code |= ERR_REG_OUTBOUNDS;
+								}
+								else if(var_count <= 0)
+								{
+									memset(error_msg_buf, 0, ERROR_MSG_LENGTH);
+									snprintf(error_msg_buf, ERROR_MSG_LENGTH, "\"invalid element subscript for '%s'\"", var_name);
+									set_Msg_to_errInfo(LINENUM, ERR_PARAM_EXCESS, error_msg_buf);
+									error_code |= ERR_PARAM_EXCESS;
+								}
+								if(i == 1)	//结果变量必须是浮点型
+								{
+									if(strncmp(head->var_type, "F", 1) != 0)
+									{
+										memset(error_msg_buf, 0, ERROR_MSG_LENGTH);
+										snprintf(error_msg_buf, ERROR_MSG_LENGTH, "\"type of '%s' must be 'F'\"", var_name);
+										set_Msg_to_errInfo(LINENUM, ERR_VARTYPE_CONFUSING, error_msg_buf);
+										error_code |= ERR_VARTYPE_CONFUSING;	
+									}
+								}
 							}
 						}
 					}
@@ -1761,7 +1875,7 @@ int scripts_checkout(const char *scripts)
 						if((atoi(start_num) + atoi(read_count) - 1) > head->var_count)
 						{
 							memset(error_msg_buf, 0, ERROR_MSG_LENGTH);
-							snprintf(error_msg_buf, ERROR_MSG_LENGTH, "\"register beyond access\"");
+							snprintf(error_msg_buf, ERROR_MSG_LENGTH, "\"register beyond access for 'DI'\"");
 							set_Msg_to_errInfo(LINENUM, ERR_REG_OUTBOUNDS, error_msg_buf);
 							error_code |= ERR_REG_OUTBOUNDS;
 						}
@@ -1780,7 +1894,7 @@ int scripts_checkout(const char *scripts)
 						if((atoi(start_num) + atoi(read_count) - 1) > head->var_count)
 						{
 							memset(error_msg_buf, 0, ERROR_MSG_LENGTH);
-							snprintf(error_msg_buf, ERROR_MSG_LENGTH, "\"register beyond access\"");
+							snprintf(error_msg_buf, ERROR_MSG_LENGTH, "\"register beyond access for 'AI'\"");
 							set_Msg_to_errInfo(LINENUM, ERR_REG_OUTBOUNDS, error_msg_buf);
 							error_code |= ERR_REG_OUTBOUNDS;
 						}
@@ -1809,6 +1923,21 @@ int scripts_checkout(const char *scripts)
 			n = vstrsep(nvp, ", ;	", &cmd, &var_name_b, &read_count, &modbus_cmd, &overtime);
 			if(n == 5)
 			{
+				//检查数组变量格式
+				if(strchr(var_name_b, '['))
+				{
+					if(n = variable_format_check(var_name_b))
+					{
+						if(n & ERR_DEFVAR_CONFUSING)
+						{
+							error_code |= ERR_DEFVAR_CONFUSING;
+						}
+						if(n & ERR_FORMAT)
+						{
+							error_code |= ERR_FORMAT;
+						}
+					}
+				}
 				//检查变量是否定义
 				var_count = get_varname(var_name, var_name_b);
 				if(params_undefined_check(var_name))
@@ -1837,7 +1966,7 @@ int scripts_checkout(const char *scripts)
 					if((var_count + atoi(read_count) - 1) > head->var_count)
 					{
 						memset(error_msg_buf, 0, ERROR_MSG_LENGTH);
-						snprintf(error_msg_buf, ERROR_MSG_LENGTH, "\"register beyond access\"");
+						snprintf(error_msg_buf, ERROR_MSG_LENGTH, "\"register beyond access for '%s'\"", var_name);
 						set_Msg_to_errInfo(LINENUM, ERR_REG_OUTBOUNDS, error_msg_buf);
 						error_code |= ERR_REG_OUTBOUNDS;
 					}
@@ -1845,7 +1974,7 @@ int scripts_checkout(const char *scripts)
 					if(strlen(modbus_cmd) != 13)
 					{
 						memset(error_msg_buf, 0, ERROR_MSG_LENGTH);
-						snprintf(error_msg_buf, ERROR_MSG_LENGTH, "\"invalid modbus command for '%s'\"", cmds);
+						snprintf(error_msg_buf, ERROR_MSG_LENGTH, "\"length of modbus command for '%s' != 13\"", cmds);
 						set_Msg_to_errInfo(LINENUM, ERR_FORMAT, error_msg_buf);
 						error_code |= ERR_FORMAT;	
 					}
@@ -1925,6 +2054,21 @@ int scripts_checkout(const char *scripts)
 			n = vstrsep(nvp, ", ;	", &cmd, &var_name_b, &per, &read_count);
 			if(n == 4)
 			{
+				//检查数组变量格式
+				if(strchr(var_name_b, '['))
+				{
+					if(n = variable_format_check(var_name_b))
+					{
+						if(n & ERR_DEFVAR_CONFUSING)
+						{
+							error_code |= ERR_DEFVAR_CONFUSING;
+						}
+						if(n & ERR_FORMAT)
+						{
+							error_code |= ERR_FORMAT;
+						}
+					}
+				}
 				//检查变量是否定义
 				var_count = get_varname(var_name, var_name_b);
 				if(params_undefined_check(var_name))
@@ -1977,6 +2121,21 @@ int scripts_checkout(const char *scripts)
 			n = vstrsep(nvp, " ;	", &cmd, &var_name_b);
 			if(n == 2)
 			{
+				//检查数组变量格式
+				if(strchr(var_name_b, '['))
+				{
+					if(n = variable_format_check(var_name_b))
+					{
+						if(n & ERR_DEFVAR_CONFUSING)
+						{
+							error_code |= ERR_DEFVAR_CONFUSING;
+						}
+						if(n & ERR_FORMAT)
+						{
+							error_code |= ERR_FORMAT;
+						}
+					}
+				}
 				//检查变量是否定义
 				var_count = get_varname(var_name, var_name_b);
 				if(params_undefined_check(var_name))
@@ -2051,10 +2210,10 @@ int scripts_checkout(const char *scripts)
 					error_code |= ERR_FORMAT;	
 				}
 				//检查modbus指令格式
-				if(strlen(modbus_cmd) != 12)
+				if(strlen(modbus_cmd) != 13)
 				{
 					memset(error_msg_buf, 0, ERROR_MSG_LENGTH);
-					snprintf(error_msg_buf, ERROR_MSG_LENGTH, "\"invalid modbus command for '%s'\"", cmds);
+					snprintf(error_msg_buf, ERROR_MSG_LENGTH, "\"length of modbus command for '%s' != 13\"", cmds);
 					set_Msg_to_errInfo(LINENUM, ERR_FORMAT, error_msg_buf);
 					error_code |= ERR_FORMAT;	
 				}
@@ -2119,7 +2278,7 @@ int scripts_checkout(const char *scripts)
 					memset(var_name, 0, 16);
 					memset(tmp_name, 0, 16);
 					len = 0;
-					while((isspace((int) *cp) || *cp == '\t' || *cp == '=' || *cp == '(' || *cp == ')' || *cp == ';'\
+					while((isspace((int) *cp) || *cp == '=' || *cp == '(' || *cp == ')' || *cp == ';'\
 						|| *cp == '!' || *cp == '&' || *cp == '|' || *cp == '<' || *cp == '>') && (*cp != '\0'))
 					{
 						cp ++;
@@ -2131,17 +2290,29 @@ int scripts_checkout(const char *scripts)
 					}
 					else
 					{
-						while(((!isspace((int) *cp)) && (*cp != '\t') && (*cp != '=') && (*cp != '(')\
+						while(((!isspace((int) *cp)) && (*cp != '=') && (*cp != '(')\
 								&& (*cp != ')') && (*cp != '!') && (*cp != '&') && (*cp != '|')\
-								&& (*cp != '<') && (*cp != '>') && (*cp != ';') && (*cp != '\r')) && (*cp != '\0'))
+								&& (*cp != '<') && (*cp != '>') && (*cp != ';')) && (*cp != '\0'))
 						{
 							cp ++;
 							len ++;
 						}
 						strncpy(tmp_name, cq, len);
 
-						if((atoi(tmp_name) == 0) && (atof(tmp_name) == 0) && (strcmp(tmp_name, "0")))	//过滤常量
+						if((atoi(tmp_name) == 0) && (atof(tmp_name) == 0) && (strncmp(tmp_name, "0", 1)))	//过滤常量
 						{
+							//检查数组变量格式
+							if(n = variable_format_check(tmp_name))
+							{
+								if(n & ERR_DEFVAR_CONFUSING)
+								{
+									error_code |= ERR_DEFVAR_CONFUSING;
+								}
+								if(n & ERR_FORMAT)
+								{
+									error_code |= ERR_FORMAT;
+								}
+							}
 							var_count = get_varname(var_name, tmp_name);
 							//检查变量是否定义
 							if(params_undefined_check(var_name))
@@ -2169,6 +2340,14 @@ int scripts_checkout(const char *scripts)
 						}
 					}
 				}
+			}
+		}
+		else if(!strcmp(cmds, "ELSE") || !strcmp(cmds, "ENDIF"))
+		{
+			//检查之前是否有IF
+			if(existIFbefore_check(cmds))
+			{
+				error_code |= ERR_IFCMD_NO_MATCH;
 			}
 		}
 		else if(!strcmp(cmds, "SLEEP"))
@@ -2222,46 +2401,47 @@ void show_cmdInfo(void)
 int main()
 {
 	int error_code = 0;
-	char *scripts = "  VARS 	 W 	 AI[12];	\n"\
-					"	VARS B DI[3] = {2, 3, 5};\n"\
-					"VAR F tmp = 5.5;\n"\
+	char *scripts =	"VARS W AI[12];\n"\
+					"	VARS B DI[4] = {2, 3, 5, 8};\n"\
+					"VAR F tmp;\n"\
 					"\n"\
 					"   \n"\
+					"	\n"\
 					"VAR F DA;\n"\
 					"VAR W wspd;\n"\
 					"VAR F TEMP_V;\n"\
 					"VAR F MAIN_VOL;\n"\
 					"VAR F BATTERY_VOL;\n"\
-					"VARS 	B UDI01[17];\n"\
+					"VARS 	F UDI01[17] = {1, -2.2};\n"\
 					"VARS F UAI02[17];\n"\
 					"INTF 1004 F wspdx;\n"\
 					"INTFS 2018 F wsdu[2];\n"\
 					"INTFS 2019 F AIV[2];\n"\
-					"CTRL 4000 B LDO1=0;\n"\
+					"CTRL 4000 B LDO1;\n"\
 					"CTRLS 4001 B LDOS[2];\n"\
-					"UCTRL 4002 30001 B UDO1=0;\n"\
+					"UCTRL 4002 30001 B UDO1 = 0;\n"\
 					"UCTRLS 4003 30001 B UDO2[2];\n"\
 					"IN_D 1, 3;\n"\
-					"IN_A 1, 2;\n"\
+					"IN_A 1, 11;\n"\
 					"IF(tmp == 0)\n"\
 					"ELSE\n"\
 					"ENDIF\n"\
-					"SET_THV 	tmp 20 30;\n"\
-					"CAL tmp = AI[1] / 4096 * 3.3 / 165 * 1000 - 4;\n"\
-					"CAL wsdu[1] = tmp * 100 / 16;\n"\
+					"SET_THV 	tmp -20 30;\n"\
+					"CAL	tmp = AI[1] / 4096 * 3.3 / 165 * 1000 - 4;\n"\
+					"CAL wsdu[1] = tmp * 100 / 16 + -0.0;\n"\
 					"CAL tmp = AI[2] / 4096 * 3.3 / 165 * 1000 - 4;\n"\
 					"	CAL wsdu[2] = tmp * 100 / 16 - 20;\n"\
 					"IN_UA wspd, 1, 020300160001A, 100;\n"\
-					"IN_UD UDI01[1],8,090200000008A, 200;\n"\
-					"IN_UF_B UAI02[1],1,010300000002A, 300;\n"\
-					"IN_UFD_B DA,1,090300000004A, 400;\n"\
-					"CAL wspdx = wspd + 10  ;\n"\
+					"IN_UD UDI01[1], 8, 090200000008A, 200;\n"\
+					"IN_UF_B UAI02[1], 2, 010300000004A, 300;\n"\
+					"IN_UFD_B DA, 1, 090300000004A, 400;\n"\
+					"CAL wspdx = wspd + 10 ;\n"\
 					"IN_ATEMP TEMP_V;\n"\
 					"IN_AMVOL MAIN_VOL;\n"\
 					"IN_ABVOL BATTERY_VOL;\n"\
 					"IN_AE AIV[1],1,2;\n"\
 					"IN_ACAE AIV[1],1,2;\n"\
-					"OUT_U 09050001FF00, 500;\n"\
+					"OUT_U 09050001FF00A, 500;\n"\
 					"OUT_D 16, 0;\n"\
 					"DO_CTRL;\n"\
 					"CONTINUE;\n"\
@@ -2269,6 +2449,7 @@ int main()
 
 	error_code = scripts_checkout(scripts);
 	//show_cmdInfo();
+	//show_params_defined();
 	if(error_code)
 	{
 		show_errMsg();	
