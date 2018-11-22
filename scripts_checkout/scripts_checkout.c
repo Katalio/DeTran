@@ -1474,9 +1474,16 @@ int scripts_checkout(const char *scripts)
 					error_code |= ERR_VARTYPE_CONFUSING;
 				}
 				//检测所赋的值是否与变量类型相对应，只需检查浮点型即可	
-				if(init_value_type_check(line, var_name))
+				if(n = init_value_type_check(line, var_name))
 				{
-					error_code |= ERR_VARTYPE_CONFUSING;	
+					if(n & ERR_VARTYPE_CONFUSING)
+					{
+						error_code |= ERR_VARTYPE_CONFUSING;	
+					}
+					if(n & ERR_FORMAT)
+					{
+						error_code |= ERR_FORMAT;	
+					}
 				}
 				if(!strcmp(cmds, "INTF"))
 				{
@@ -1598,9 +1605,16 @@ int scripts_checkout(const char *scripts)
 					error_code |= ERR_DEFVAR_CONFLICTING;
 				}
 				//检测所赋的值是否与变量类型相对应，只需检查浮点型即可	
-				if(init_value_type_check(line, var_name))
+				if(n = init_value_type_check(line, var_name))
 				{
-					error_code |= ERR_VARTYPE_CONFUSING;	
+					if(n & ERR_VARTYPE_CONFUSING)
+					{
+						error_code |= ERR_VARTYPE_CONFUSING;	
+					}
+					if(n & ERR_FORMAT)
+					{
+						error_code |= ERR_FORMAT;	
+					}
 				}
 				if(!strcmp(cmds, "CTRL"))
 				{
@@ -1699,9 +1713,16 @@ int scripts_checkout(const char *scripts)
 					error_code |= ERR_DEFVAR_CONFLICTING;
 				}
 				//检测所赋的值是否与变量类型相对应，只需检查浮点型即可	
-				if(init_value_type_check(line, var_name))
+				if(n = init_value_type_check(line, var_name))
 				{
-					error_code |= ERR_VARTYPE_CONFUSING;	
+					if(n & ERR_VARTYPE_CONFUSING)
+					{
+						error_code |= ERR_VARTYPE_CONFUSING;	
+					}
+					if(n & ERR_FORMAT)
+					{
+						error_code |= ERR_FORMAT;	
+					}
 				}
 				
 				if(!strcmp(cmds, "UCTRL"))
