@@ -350,6 +350,24 @@ int aidi_type_check(char *var_name, char *var_type)
 	return err_flag;
 }
 
+int cmds_format_check(char *line, char *var_name_b)
+{
+	int err_flag = 0;
+	char *p;
+
+	p = strstr(line, var_name_b);
+
+	p += strlen(var_name_b);
+
+	while(isspace((int) *p) && *p != '\0')
+		p ++;
+
+	if(*p != ';' && *p != '\n' && *p != '\0')
+		err_flag = 1;
+
+	return err_flag;
+}
+
 int arr_excess_check(char *line)
 {
 	int len;
@@ -877,6 +895,15 @@ int cal_format_check(char *line)
 	int i = 0, op_flag = 0;
 	int error_flag = 0;
 
+	if(strchr(line, '=') == NULL)
+	{
+		memset(error_msg_buf, 0, ERROR_MSG_LENGTH);
+		snprintf(error_msg_buf, ERROR_MSG_LENGTH, "\"expected '=' for 'CAL'\"");
+		set_Msg_to_errInfo(LINENUM, ERR_FORMAT, error_msg_buf);
+
+		error_flag = 1;
+	}
+
 	while(*(line + i))
 	{
 		p = op_characters;
@@ -933,12 +960,15 @@ int cal_format_check(char *line)
 				{
 					if(!strcmp(tmp, *p) || !strcmp(tmp, ";"))
 					{
-						memset(error_msg_buf, 0, ERROR_MSG_LENGTH);
-						snprintf(error_msg_buf, ERROR_MSG_LENGTH, "\"expected expression before '%s' token\"", tmp);
-						set_Msg_to_errInfo(LINENUM, ERR_FORMAT, error_msg_buf);
+						if(strcmp(tmp, "~"))
+						{
+							memset(error_msg_buf, 0, ERROR_MSG_LENGTH);
+							snprintf(error_msg_buf, ERROR_MSG_LENGTH, "\"expected expression before '%s' token\"", tmp);
+							set_Msg_to_errInfo(LINENUM, ERR_FORMAT, error_msg_buf);
 
-						error_flag = 1;
-						break;
+							error_flag = 1;
+							break;
+						}
 					}
 					p ++;
 				}
@@ -1337,6 +1367,16 @@ int scripts_checkout(const char *scripts)
 				{
 					error_code |= ERR_VARTYPE_CONFUSING;
 				}
+				if(strchr(line, '=') == NULL)
+				{
+					if(cmds_format_check(line, var_name_b))
+					{
+						memset(error_msg_buf, 0, ERROR_MSG_LENGTH);
+						snprintf(error_msg_buf, ERROR_MSG_LENGTH, "\"exist initial value without '='\"");
+						set_Msg_to_errInfo(LINENUM, ERR_FORMAT, error_msg_buf);
+						error_code |= ERR_FORMAT;	
+					}
+				}
 				//检测所赋的值是否与变量类型相对应，只需检查浮点型即可	
 				if(n = init_value_type_check(line, var_name))
 				{
@@ -1473,6 +1513,16 @@ int scripts_checkout(const char *scripts)
 				{
 					error_code |= ERR_VARTYPE_CONFUSING;
 				}
+				if(strchr(line, '=') == NULL)
+				{
+					if(cmds_format_check(line, var_name_b))
+					{
+						memset(error_msg_buf, 0, ERROR_MSG_LENGTH);
+						snprintf(error_msg_buf, ERROR_MSG_LENGTH, "\"exist initial value without '='\"");
+						set_Msg_to_errInfo(LINENUM, ERR_FORMAT, error_msg_buf);
+						error_code |= ERR_FORMAT;	
+					}
+				}
 				//检测所赋的值是否与变量类型相对应，只需检查浮点型即可	
 				if(n = init_value_type_check(line, var_name))
 				{
@@ -1604,6 +1654,16 @@ int scripts_checkout(const char *scripts)
 				{
 					error_code |= ERR_DEFVAR_CONFLICTING;
 				}
+				if(strchr(line, '=') == NULL)
+				{
+					if(cmds_format_check(line, var_name_b))
+					{
+						memset(error_msg_buf, 0, ERROR_MSG_LENGTH);
+						snprintf(error_msg_buf, ERROR_MSG_LENGTH, "\"exist initial value without '='\"");
+						set_Msg_to_errInfo(LINENUM, ERR_FORMAT, error_msg_buf);
+						error_code |= ERR_FORMAT;	
+					}
+				}
 				//检测所赋的值是否与变量类型相对应，只需检查浮点型即可	
 				if(n = init_value_type_check(line, var_name))
 				{
@@ -1711,6 +1771,16 @@ int scripts_checkout(const char *scripts)
 				if(params_confdef_check(var_name, var_type, var_count))
 				{
 					error_code |= ERR_DEFVAR_CONFLICTING;
+				}
+				if(strchr(line, '=') == NULL)
+				{
+					if(cmds_format_check(line, var_name_b))
+					{
+						memset(error_msg_buf, 0, ERROR_MSG_LENGTH);
+						snprintf(error_msg_buf, ERROR_MSG_LENGTH, "\"exist initial value without '='\"");
+						set_Msg_to_errInfo(LINENUM, ERR_FORMAT, error_msg_buf);
+						error_code |= ERR_FORMAT;	
+					}
 				}
 				//检测所赋的值是否与变量类型相对应，只需检查浮点型即可	
 				if(n = init_value_type_check(line, var_name))
@@ -1881,6 +1951,22 @@ int scripts_checkout(const char *scripts)
 
 					if(strcmp(tmp_name, cmds))	//过滤指令CAL
 					{
+						cq += strlen(tmp_name);
+
+						while(isspace((int) *cq) && *cq != '\0')
+							cq ++;
+
+						if((*cq != '+') && (*cq != '-') && (*cq != '*') && (*cq != '/') && (*cq != '<')\
+								&& (*cq != '>') && (*cq != '~') && (*cq != '&') && (*cq != '|') && (*cq != '^')\
+								&& (*cq != '=') && (*cq != ';') && (*cq != '\n') && (*cq != '\0'))
+						{
+							memset(error_msg_buf, 0, ERROR_MSG_LENGTH);
+							snprintf(error_msg_buf, ERROR_MSG_LENGTH, "\"expected operator after '%s' token\"", tmp_name);
+							set_Msg_to_errInfo(LINENUM, ERR_FORMAT, error_msg_buf);
+
+							error_code |= ERR_FORMAT;
+						}
+
 						if(tmp_name[0] < '0' || tmp_name[0] > '9')	//过滤常量
 						{
 							i ++;
@@ -2518,7 +2604,7 @@ int main()
 					"UCTRL 4002 30001 B UDO1 = 0;\n"\
 					"UCTRLS 4003 30001 B UDO2[2];\n"\
 					"IN_D 1, 3;\n"\
-					"IN_A 1, 11;\n"\
+					"IN_A 1, 1;\n"\
 					"IF(tmp == 0)\n"\
 					"ELSE\n"\
 					"ENDIF\n"\
