@@ -12,7 +12,7 @@
 
 #include "scripts_checkout.h"
 
-#define ERROR_NUM 64
+#define ERROR_NUM 128 
 #define PARAMS_TOTAL_NUM 512
 #define LINE_SIZE 1024 
 
@@ -56,8 +56,6 @@ int scripts_getline(char *line, const char *scripts)
 {
 	static int cur_index = 0;
 	int i = 0;
-
-	memset(line, 0, LINE_SIZE);
 
 	//读取当前行
 	while((scripts[cur_index] != '\n') && (scripts[cur_index] != '\0') && (i < LINE_SIZE))
@@ -159,7 +157,7 @@ loop:
 	free(nv);
 #else
 	char *cp, *cq;
-	int i = 0, len = 0;
+	int len = 0;
 
 	cp = line;
 	while(isspace((int) *cp) && (*cp != '\0'))
@@ -194,7 +192,7 @@ int get_varname(char *var_name, char *buf)
 
 		if(q = strchr(buf, '['))
 		{
-			while((*(p + i) != ' ') && (*(p + i) != '[') && (*(p + i) != '\n') && (*(p + i) != '\0'))
+			while(!isspace((int) *(p + i)) && (*(p + i) != '[') && (*(p + i) != '\n') && (*(p + i) != '\0'))
 			{
 				tmp_name[i] = p[i];
 				i ++;
@@ -209,7 +207,7 @@ int get_varname(char *var_name, char *buf)
 		}
 		else
 		{
-			while((*(p + i) != ' ') && (*(p + i) != '\n') && (*(p + i) != '\0'))
+			while(!isspace((int) *(p + i)) && (*(p + i) != '\n') && (*(p + i) != '\0'))
 			{
 				tmp_name[i] = p[i];
 				i ++;
@@ -224,7 +222,7 @@ int get_varname(char *var_name, char *buf)
 
 		if(q = strchr(buf, '['))
 		{
-			while((*(p + i) != ' ') && (*(p + i) != '[') && (*(p + i) != '\n') && (*(p + i) != '\0'))
+			while(!isspace((int) *(p + i)) && (*(p + i) != '[') && (*(p + i) != '\n') && (*(p + i) != '\0'))
 			{
 				tmp_name[i] = p[i];
 				i ++;
@@ -239,7 +237,7 @@ int get_varname(char *var_name, char *buf)
 		}
 		else
 		{
-			while((*(p + i) != ' ') && (*(p + i) != '\n') && (*(p + i) != '\0'))
+			while(!isspace((int) *(p + i)) && (*(p + i) != '\n') && (*(p + i) != '\0'))
 			{
 				tmp_name[i] = p[i];
 				i ++;
@@ -802,14 +800,14 @@ int endsymbol_check(char *line)
 
 			l = strrchr(line, ';');
 			l ++; 
-			while((*l == ' ') && (*l == '\t') && (*l == '\r') && (*l != '\0'))
+			while(isspace((int) *l) && (*l != '\0'))
 			{
 				l ++;
 			}
 			if((*l != '\n') && (*l != '\0'))
 			{
 				memset(error_msg_buf, 0, ERROR_MSG_LENGTH);
-				snprintf(error_msg_buf, ERROR_MSG_LENGTH, "\"too more excuting statements in one line\"");
+				snprintf(error_msg_buf, ERROR_MSG_LENGTH, "\"';' is not at end of the line\"");
 				set_Msg_to_errInfo(LINENUM, ERR_FORMAT, error_msg_buf);
 
 				err_flag = 1;
@@ -1057,7 +1055,7 @@ int ctrl_output_check(void)
 	if(err_flag)
 	{
 		memset(error_msg_buf, 0, ERROR_MSG_LENGTH);
-		snprintf(error_msg_buf, ERROR_MSG_LENGTH, "\"no variable need to output in 'DO_CTRL'\"");
+		snprintf(error_msg_buf, ERROR_MSG_LENGTH, "\"no variable need to output by 'DO_CTRL'\"");
 		set_Msg_to_errInfo(LINENUM, ERR_NO_CTRL_OUTPUT, error_msg_buf);
 		
 		return 1;
@@ -1111,17 +1109,17 @@ int Numofstr(char *Mstr, char *substr)
 
 	while(*Mstr != '\0')
 	{
-	    p = Mstr;
-	    q = substr;
+	    p = Mstr;//IF(TMP === 0)
+	    q = substr;// ==
 
 	    while((*p == *q) && (*p != '\0') && (*q != '\0'))
 	    {
 	        p ++;
 	        q ++;
 	    }
-	    if((*q == '\0') && (*p != '='))
+	    if(*q == '\0' && *p != '=')
 	    {
-	        number ++;
+	     	number ++;
 	    }
 	    Mstr ++;
 	}
@@ -1166,21 +1164,14 @@ int brackets_exist_check(char *str)	//only for IF
 int existIFbefore_check(char *cmd)
 {
 	char (*p)[16] = cmd_info;
-	int err_flag = 0, noif_flag = 1, nomatch_flag = 0;
-	int if_count = 0, cmd_count = 0;
+	int err_flag = 0, noif_flag = 1;
 
 	while(strlen(*p) != 0)
 	{
 		if(!strcmp(*p, "IF"))
 		{
-			if_count += 1;
 			noif_flag = 0;
 		}
-		if(!strcmp(*p, cmd))
-		{
-			cmd_count += 1;
-		}
-
 		p ++;
 	}
 
@@ -1189,23 +1180,43 @@ int existIFbefore_check(char *cmd)
 		memset(error_msg_buf, 0, ERROR_MSG_LENGTH);
 		snprintf(error_msg_buf, ERROR_MSG_LENGTH, "\"no 'IF' before '%s'\"", cmd);
 		set_Msg_to_errInfo(LINENUM, ERR_IFCMD_NO_MATCH, error_msg_buf);
-	}
 
-	if(if_count != cmd_count && !noif_flag && strcmp(cmd, "ELSE"))	//ELSE不是IF所必须的，故不用报此错
-	{
-		memset(error_msg_buf, 0, ERROR_MSG_LENGTH);
-		snprintf(error_msg_buf, ERROR_MSG_LENGTH, "\"'IF' don't match '%s'\"", cmd);
-		set_Msg_to_errInfo(LINENUM, ERR_IFCMD_NO_MATCH, error_msg_buf);
-
-		nomatch_flag = 1;
-	}
-
-	if(noif_flag || nomatch_flag)
-	{
 		err_flag = 1;
 	}
 
 	return err_flag;
+}
+
+int check_if_endif(void)
+{
+	char (*p)[16], (*q)[16];
+	int if_count = 0, endif_count = 0;
+
+ 	p = q = cmd_info;
+
+	while(strlen(*p) != 0)
+	{
+		if(!strcmp(*p, "IF"))
+		{
+			if_count += 1;	
+		}
+		p ++;
+	}
+
+	while(strlen(*q) != 0)
+	{
+		if(!strcmp(*q, "ENDIF"))
+		{
+			endif_count += 1;
+		}
+
+		q ++;
+	}
+
+	if(if_count != endif_count)
+		return 1;
+
+	return 0;
 }
 
 int NestofIF_check(void)
@@ -1272,6 +1283,14 @@ int scripts_checkout(const char *scripts)
 	params_defined_info *head;
 	unsigned int cur_size = 0, line_size, total_size;
 
+	if(scripts == NULL)
+	{
+		printf("Scripts is NULL.\n");
+		//syslog(LOG_NOTICE, "Scripts is NULL.");
+		
+		return error_code;
+	}
+
 	total_size = strlen(scripts);
 
 	if(scripts_oversize(total_size))
@@ -1300,7 +1319,7 @@ int scripts_checkout(const char *scripts)
 		cp = line;
 		while(isspace((int) *cp) && *cp != '\0')
 		{
-			cp++;
+			cp ++;
 		}
 		if(*cp == '\0')
 		{
@@ -1664,18 +1683,6 @@ int scripts_checkout(const char *scripts)
 						error_code |= ERR_FORMAT;	
 					}
 				}
-				//检测所赋的值是否与变量类型相对应，只需检查浮点型即可	
-				if(n = init_value_type_check(line, var_name))
-				{
-					if(n & ERR_VARTYPE_CONFUSING)
-					{
-						error_code |= ERR_VARTYPE_CONFUSING;	
-					}
-					if(n & ERR_FORMAT)
-					{
-						error_code |= ERR_FORMAT;	
-					}
-				}
 				if(!strcmp(cmds, "CTRL"))
 				{
 					if(strchr(var_name_b, '[') != NULL)
@@ -1684,6 +1691,18 @@ int scripts_checkout(const char *scripts)
 						snprintf(error_msg_buf, ERROR_MSG_LENGTH, "\"unexpected '[]' for 'CTRL'\"");
 						set_Msg_to_errInfo(LINENUM, ERR_DEFVAR_CONFUSING, error_msg_buf);
 						error_code |= ERR_DEFVAR_CONFUSING;	
+					}
+					//检测所赋的值是否与变量类型相对应，只需检查浮点型即可	
+					if(n = init_value_type_check(line, var_name))
+					{
+						if(n & ERR_VARTYPE_CONFUSING)
+						{
+							error_code |= ERR_VARTYPE_CONFUSING;	
+						}
+						if(n & ERR_FORMAT)
+						{
+							error_code |= ERR_FORMAT;	
+						}
 					}
 				}
 				if(!strcmp(cmds, "CTRLS"))
@@ -1782,18 +1801,6 @@ int scripts_checkout(const char *scripts)
 						error_code |= ERR_FORMAT;	
 					}
 				}
-				//检测所赋的值是否与变量类型相对应，只需检查浮点型即可	
-				if(n = init_value_type_check(line, var_name))
-				{
-					if(n & ERR_VARTYPE_CONFUSING)
-					{
-						error_code |= ERR_VARTYPE_CONFUSING;	
-					}
-					if(n & ERR_FORMAT)
-					{
-						error_code |= ERR_FORMAT;	
-					}
-				}
 				
 				if(!strcmp(cmds, "UCTRL"))
 				{
@@ -1803,6 +1810,18 @@ int scripts_checkout(const char *scripts)
 						snprintf(error_msg_buf, ERROR_MSG_LENGTH, "\"unexpected '[]' for 'UCTRL'\"");
 						set_Msg_to_errInfo(LINENUM, ERR_DEFVAR_CONFUSING, error_msg_buf);
 						error_code |= ERR_DEFVAR_CONFUSING;	
+					}
+					//检测所赋的值是否与变量类型相对应，只需检查浮点型即可	
+					if(n = init_value_type_check(line, var_name))
+					{
+						if(n & ERR_VARTYPE_CONFUSING)
+						{
+							error_code |= ERR_VARTYPE_CONFUSING;	
+						}
+						if(n & ERR_FORMAT)
+						{
+							error_code |= ERR_FORMAT;	
+						}
 					}
 				}
 				if(!strcmp(cmds, "UCTRLS"))
@@ -1845,11 +1864,29 @@ int scripts_checkout(const char *scripts)
 		else if(!strcmp(cmds, "SET_THV"))
 		{
 			char *thr_up, *thr_low;
+
+			memset(var_name, 0, 16);
 			n = vstrsep(nvp, "	; ", &cmd, &var_name_b, &thr_low, &thr_up);
 			if(n == 4)
 			{
+				if(cmds_format_check(line, thr_up))
+				{
+					memset(error_msg_buf, 0, ERROR_MSG_LENGTH);
+					snprintf(error_msg_buf, ERROR_MSG_LENGTH, "\"too more elements for '%s'\"", cmds);
+					set_Msg_to_errInfo(LINENUM, ERR_FORMAT, error_msg_buf);
+					error_code |= ERR_FORMAT;	
+				}
+				//获取变量名
+				var_count = get_varname(var_name, var_name_b);
+				if(var_count <= 0)
+				{
+					memset(error_msg_buf, 0, ERROR_MSG_LENGTH);
+					snprintf(error_msg_buf, ERROR_MSG_LENGTH, "\"invalid element subscript for '%s'\"", var_name);
+					set_Msg_to_errInfo(LINENUM, ERR_PARAM_EXCESS, error_msg_buf);
+					error_code |= ERR_PARAM_EXCESS;
+				}
 				//检查变量是否定义
-				if(params_undefined_check(var_name_b))
+				if(params_undefined_check(var_name))
 				{
 					error_code |= ERR_PARAM_UNDEFINED;	
 				}
@@ -1870,19 +1907,10 @@ int scripts_checkout(const char *scripts)
 							}
 						}
 					}
-
-					var_count = get_varname(var_name, var_name_b);
-					if(var_count <= 0)
-					{
-						memset(error_msg_buf, 0, ERROR_MSG_LENGTH);
-						snprintf(error_msg_buf, ERROR_MSG_LENGTH, "\"invalid element subscript for '%s'\"", var_name);
-						set_Msg_to_errInfo(LINENUM, ERR_PARAM_EXCESS, error_msg_buf);
-						error_code |= ERR_PARAM_EXCESS;
-					}
 					//检查变量类型
 					if(strchr(thr_low, '.') || strchr(thr_up, '.'))
 					{
-						head = get_params_info(var_name_b);
+						head = get_params_info(var_name);
 						if(strncmp(head->var_type, "F", 1) != 0)
 						{
 							memset(error_msg_buf, 0, ERROR_MSG_LENGTH);
@@ -1895,7 +1923,7 @@ int scripts_checkout(const char *scripts)
 					if(atoi(thr_low) > atoi(thr_up))
 					{
 						memset(error_msg_buf, 0, ERROR_MSG_LENGTH);
-						snprintf(error_msg_buf, ERROR_MSG_LENGTH, "\"invalid initializer[%d > %d]\"", atoi(thr_low), atoi(thr_up));
+						snprintf(error_msg_buf, ERROR_MSG_LENGTH, "\"invalid initializer[low:%d > up:%d]\"", atoi(thr_low), atoi(thr_up));
 						set_Msg_to_errInfo(LINENUM, ERR_THRESH, error_msg_buf);
 						error_code |= ERR_THRESH;	
 					}
@@ -1951,6 +1979,7 @@ int scripts_checkout(const char *scripts)
 
 					if(strcmp(tmp_name, cmds))	//过滤指令CAL
 					{
+						//变量之间必须有操作符
 						cq += strlen(tmp_name);
 
 						while(isspace((int) *cq) && *cq != '\0')
@@ -2150,57 +2179,59 @@ int scripts_checkout(const char *scripts)
 						set_Msg_to_errInfo(LINENUM, ERR_FORMAT, error_msg_buf);
 						error_code |= ERR_FORMAT;	
 					}
-
-					for(i = 8, j = 0; i < 12; i ++, j ++)
+					else
 					{
-						tmp[j] = modbus_cmd[i];
-					}
-					tmp[j] = '\0';
+						for(i = 8, j = 0; i < 12; i ++, j ++)
+						{
+							tmp[j] = modbus_cmd[i];
+						}
+						tmp[j] = '\0';
 
-					if(!strcmp(cmds, "IN_UD") || !strcmp(cmds, "IN_UD_B") || !strcmp(cmds, "IN_UA") || !strcmp(cmds, "IN_UA_B"))	
-					{
-						if(atoi(read_count) != str_to_hex(tmp))
+						if(!strcmp(cmds, "IN_UD") || !strcmp(cmds, "IN_UD_B") || !strcmp(cmds, "IN_UA") || !strcmp(cmds, "IN_UA_B"))	
 						{
-							memset(error_msg_buf, 0, ERROR_MSG_LENGTH);
-							snprintf(error_msg_buf, ERROR_MSG_LENGTH, "\"registers read of V20 don't match with that of modbus\"");
-							set_Msg_to_errInfo(LINENUM, ERR_SERIAL_RDREG, error_msg_buf);
-							error_code |= ERR_SERIAL_RDREG;	
+							if(atoi(read_count) != str_to_hex(tmp))
+							{
+								memset(error_msg_buf, 0, ERROR_MSG_LENGTH);
+								snprintf(error_msg_buf, ERROR_MSG_LENGTH, "\"registers read of V20 don't match with that of modbus\"");
+								set_Msg_to_errInfo(LINENUM, ERR_SERIAL_RDREG, error_msg_buf);
+								error_code |= ERR_SERIAL_RDREG;	
+							}
 						}
-					}
-					if(!strcmp(cmds, "IN_UF_B"))	
-					{
-						if(strncmp(head->var_type, "F", 1) != 0)
+						if(!strcmp(cmds, "IN_UF_B"))	
 						{
-							memset(error_msg_buf, 0, ERROR_MSG_LENGTH);
-							snprintf(error_msg_buf, ERROR_MSG_LENGTH, "\"type of '%s' must be 'F'\"", var_name);
-							set_Msg_to_errInfo(LINENUM, ERR_VARTYPE_CONFUSING, error_msg_buf);
-							error_code |= ERR_VARTYPE_CONFUSING;	
-						}
+							if(strncmp(head->var_type, "F", 1) != 0)
+							{
+								memset(error_msg_buf, 0, ERROR_MSG_LENGTH);
+								snprintf(error_msg_buf, ERROR_MSG_LENGTH, "\"type of '%s' must be 'F'\"", var_name);
+								set_Msg_to_errInfo(LINENUM, ERR_VARTYPE_CONFUSING, error_msg_buf);
+								error_code |= ERR_VARTYPE_CONFUSING;	
+							}
 
-						if((atoi(read_count) * 2) != str_to_hex(tmp))
-						{
-							memset(error_msg_buf, 0, ERROR_MSG_LENGTH);
-							snprintf(error_msg_buf, ERROR_MSG_LENGTH, "\"registers read of V20 don't match with that of modbus\"");
-							set_Msg_to_errInfo(LINENUM, ERR_SERIAL_RDREG, error_msg_buf);
-							error_code |= ERR_SERIAL_RDREG;	
+							if((atoi(read_count) * 2) != str_to_hex(tmp))
+							{
+								memset(error_msg_buf, 0, ERROR_MSG_LENGTH);
+								snprintf(error_msg_buf, ERROR_MSG_LENGTH, "\"registers read of V20 don't match with that of modbus\"");
+								set_Msg_to_errInfo(LINENUM, ERR_SERIAL_RDREG, error_msg_buf);
+								error_code |= ERR_SERIAL_RDREG;	
+							}
 						}
-					}
-					if(!strcmp(cmds, "IN_UFD_B"))	
-					{
-						if(strncmp(head->var_type, "F", 1) != 0)
+						if(!strcmp(cmds, "IN_UFD_B"))	
 						{
-							memset(error_msg_buf, 0, ERROR_MSG_LENGTH);
-							snprintf(error_msg_buf, ERROR_MSG_LENGTH, "\"type of '%s' must be 'F'\"", var_name);
-							set_Msg_to_errInfo(LINENUM, ERR_VARTYPE_CONFUSING, error_msg_buf);
-							error_code |= ERR_VARTYPE_CONFUSING;	
-						}
+							if(strncmp(head->var_type, "F", 1) != 0)
+							{
+								memset(error_msg_buf, 0, ERROR_MSG_LENGTH);
+								snprintf(error_msg_buf, ERROR_MSG_LENGTH, "\"type of '%s' must be 'F'\"", var_name);
+								set_Msg_to_errInfo(LINENUM, ERR_VARTYPE_CONFUSING, error_msg_buf);
+								error_code |= ERR_VARTYPE_CONFUSING;	
+							}
 
-						if((atoi(read_count) * 4) != str_to_hex(tmp))
-						{
-							memset(error_msg_buf, 0, ERROR_MSG_LENGTH);
-							snprintf(error_msg_buf, ERROR_MSG_LENGTH, "\"registers read of V20 don't match with that of modbus\"");
-							set_Msg_to_errInfo(LINENUM, ERR_SERIAL_RDREG, error_msg_buf);
-							error_code |= ERR_SERIAL_RDREG;	
+							if((atoi(read_count) * 4) != str_to_hex(tmp))
+							{
+								memset(error_msg_buf, 0, ERROR_MSG_LENGTH);
+								snprintf(error_msg_buf, ERROR_MSG_LENGTH, "\"registers read of V20 don't match with that of modbus\"");
+								set_Msg_to_errInfo(LINENUM, ERR_SERIAL_RDREG, error_msg_buf);
+								error_code |= ERR_SERIAL_RDREG;	
+							}
 						}
 					}
 				}
@@ -2421,21 +2452,22 @@ int scripts_checkout(const char *scripts)
 				error_code |= ERR_IFCMD_EXCESS;	
 			}
 
-			if(brackets_exist_check(line) == 1)	//only for IF
+			n = brackets_exist_check(line);
+			if(n == 1)	//only for IF
 			{
 				memset(error_msg_buf, 0, ERROR_MSG_LENGTH);
 				snprintf(error_msg_buf, ERROR_MSG_LENGTH, "\"each condition need parentheses\"");
 				set_Msg_to_errInfo(LINENUM, ERR_FORMAT, error_msg_buf);
 				error_code |= ERR_FORMAT;	
 			}
-			else if(brackets_exist_check(line) == 2)	//only for IF
+			else if(n == 2)	//only for IF
 			{
 				memset(error_msg_buf, 0, ERROR_MSG_LENGTH);
-				snprintf(error_msg_buf, ERROR_MSG_LENGTH, "\"expected condition for 'IF'\"");
+				snprintf(error_msg_buf, ERROR_MSG_LENGTH, "\"expected condition or valid operator for 'IF'\"");
 				set_Msg_to_errInfo(LINENUM, ERR_FORMAT, error_msg_buf);
 				error_code |= ERR_FORMAT;	
 			}
-			else if(brackets_exist_check(line) == 3)	//only for IF
+			else if(n == 3)	//only for IF
 			{
 				memset(error_msg_buf, 0, ERROR_MSG_LENGTH);
 				snprintf(error_msg_buf, ERROR_MSG_LENGTH, "\"invalid format for 'IF'\"");
@@ -2456,7 +2488,7 @@ int scripts_checkout(const char *scripts)
 						cp ++;
 					}
 					cq = cp;
-					if(*cp == '\0' || *cp == '\n')
+					if(*cp == '\0')
 					{
 						break;
 					}
@@ -2554,6 +2586,16 @@ int scripts_checkout(const char *scripts)
 		free(nv);
 	}
 
+	//检测IF与ENDIF个数是否相等
+	if(check_if_endif())
+	{
+		memset(error_msg_buf, 0, ERROR_MSG_LENGTH);
+		snprintf(error_msg_buf, ERROR_MSG_LENGTH, "\"'IF' don't match 'ENDIF'\"");
+		set_Msg_to_errInfo(LINENUM, ERR_IFCMD_NO_MATCH, error_msg_buf);
+
+		error_code |= ERR_IFCMD_NO_MATCH;
+	}
+
 	return error_code;
 }
 
@@ -2583,20 +2625,18 @@ void show_params_defined(void)
 int main()
 {
 	int error_code = 0;
+#if 1
 	char *scripts =	"VARS W AI[12];\n"\
-					"	VARS B DI[4] = {2, 3	,5, 	8	};\n"\
+					"VARS B DI[4]={2,3,5,8};\n"\
 					"VAR F tmp;\n"\
-					"\n"\
-					"   \n"\
-					"	\n"\
 					"VAR F DA;\n"\
-					"VAR W wspd = 5 	;\n"\
+					"VAR W wspd = 5;\n"\
 					"VAR F TEMP_V;\n"\
 					"VAR F MAIN_VOL;\n"\
 					"VAR F BATTERY_VOL;\n"\
-					"VARS 	F UDI01[17] = {1 ,-2.4};\n"\
+					"VARS F UDI01[17] = {1, -2.4};\n"\
 					"VARS F UAI02[17];\n"\
-					"INTF 1004 F wspdx = 5.7 ;\n"\
+					"INTF 1004 F wspdx = 5.7;\n"\
 					"INTFS 2018 F wsdu[2];\n"\
 					"INTFS 2019 F AIV[2];\n"\
 					"CTRL 4000 B LDO1;\n"\
@@ -2605,19 +2645,19 @@ int main()
 					"UCTRLS 4003 30001 B UDO2[2];\n"\
 					"IN_D 1, 3;\n"\
 					"IN_A 1, 1;\n"\
-					"IF(tmp == 0)\n"\
+					"IF (tmp == 0)\n"\
 					"ELSE\n"\
 					"ENDIF\n"\
-					"SET_THV 	tmp -20 30;\n"\
-					"CAL	tmp = AI[1] / 4096 * 3.3 / 165 * 1000 - 4;\n"\
-					"CAL wsdu[1] = tmp * 100 / 16 + -0.0;\n"\
+					"SET_THV tmp -20 30;\n"\
+					"CAL tmp = AI[1] / 4096 * 3.3 / 165 * 1000 - 4;\n"\
+					"CAL wsdu[1] = tmp * 100 / 16 + 0.0;\n"\
 					"CAL tmp = AI[2] / 4096 * 3.3 / 165 * 1000 - 4;\n"\
-					"	CAL wsdu[2] = tmp * 100 / 16 - 20;\n"\
+					"CAL wsdu[2] = tmp * 100 / 16 - 20;\n"\
 					"IN_UA wspd, 1, 020300160001A, 100;\n"\
 					"IN_UD UDI01[1], 8, 090200000008A, 200;\n"\
 					"IN_UF_B UAI02[1], 2, 010300000004A, 300;\n"\
 					"IN_UFD_B DA, 1, 090300000004A, 400;\n"\
-					"CAL wspdx = wspd + 10 ;\n"\
+					"CAL wspdx = wspd + 10;\n"\
 					"IN_ATEMP TEMP_V;\n"\
 					"IN_AMVOL MAIN_VOL;\n"\
 					"IN_ABVOL BATTERY_VOL;\n"\
@@ -2628,7 +2668,9 @@ int main()
 					"DO_CTRL;\n"\
 					"CONTINUE;\n"\
 					"SLEEP 1000;";
-
+#else
+	char *scripts = NULL;
+#endif
 	error_code = scripts_checkout(scripts);
 //	show_cmdInfo();
 //	show_params_defined();
@@ -2639,7 +2681,8 @@ int main()
 		return -1;
 	}
 	
-	printf("Scripts check ok.\n");
+	if(scripts != NULL)
+		printf("Scripts check ok.\n");
 	//syslog(LOG_NOTICE, "Scripts check ok.");
 
 	return 0;

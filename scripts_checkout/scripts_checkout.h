@@ -98,6 +98,14 @@ typedef struct
 } params_defined_info;
 
 /* functions */
+/*
+ *功能：检测脚本的语法错误
+ *输入：脚本文件
+ *返回值：错误代码
+ */
 int scripts_checkout(const char *scripts);
-
+/*
+ *功能：输出错误信息
+ */
+void show_errMsg(void);
 #endif	/* _SCRIPTS_CHECKOUT_H_ */
