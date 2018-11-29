@@ -14,51 +14,9 @@
 #define DI_REGISTER_NUM 16
 #define MAX_REGISTER_NUM 65535
 
-/* valid commands */
-const char *script_cmds[] =
-{
-	"VAR",	//定义单个变量
-	"VARS",	//定义数组变量
-	"INTF",	//定义单个变量，同时给定寄存器地址
-	"INTFS",	//定义数组变量，同时给定寄存器首地址
-	"SET_THV",	//对变量设置阈值，触发上报
-	"CTRL",	//定义由平台控制的单个变量，向本机DO输出
-	"CTRLS",	//定义由平台控制的数组变量，向本机DO输出
-	"UCTRL",	//定义由平台控制的单个变量，向串口发送控制输出
-	"UCTRLS",	//定义由平台控制的数组变量，向串口发送控制输出
-	"SET_ADDR",	
-	"CAL",	//用于计算，结果为浮点数
-	"IN_D",	//读取本机DI量，可连续读取
-	"IN_UD",	//通过串口读取DI量，一般是485或232，可连续读取
-	"IN_UD_B",	//同上
-	"IN_A",	//读取本机AI量，可连续读取
-	"IN_AE",	//读取AI量，并将其转换成电流值
-	"IN_ACAE",	//读取交流电电流
-	"IN_ATEMP",	//读取芯片温度
-	"IN_AMVOL",	//读取主电源电压
-	"IN_ABVOL",	//读取电池电压
-	"IN_UA",	//通过串口读取AI量，一般是485或232，可连续读取
-	"IN_UA_B",	//同上
-	"IN_UF_B",	//同IN_UA，但1个变量对应2个寄存器
-	"IN_UFD_B",	//同IN_UA，但1个变量对应4个寄存器
-	"OUT_D",	//向本机DI输出控制
-	"OUT_U",	//向串口发送输出控制
-	"DO_CTRL",	//用于执行CTRL/CTRLS/UCTRL/UCTRLS输出变量的输出控制
-	"IF",	
-	"ELSE",
-	"ENDIF",
-	"SLEEP",
-	"CONTINUE",
-	NULL
-};
-
-/* valid data type--
- * B:无符号单字节整形
- * W:无符号双字节整形
- * L:有符号四字节整形
- * U:无符号四字节整形
- * F:四字节浮点数 */
-const char *scripts_vartype[] = {"B", "W", "L", "U", "F", NULL};
+#define ERROR_NUM 128 
+#define PARAMS_TOTAL_NUM 512
+#define LINE_SIZE 1024
 
 /* error codes */
 typedef enum
@@ -104,8 +62,5 @@ typedef struct
  *返回值：错误代码
  */
 int scripts_checkout(const char *scripts);
-/*
- *功能：输出错误信息
- */
-void show_errMsg(void);
+
 #endif	/* _SCRIPTS_CHECKOUT_H_ */
