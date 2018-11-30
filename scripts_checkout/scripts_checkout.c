@@ -718,7 +718,7 @@ int variable_format_check(params_defined_info *params_definfo, char *cmd, char *
 		if(strchr(var_name_b, '['))
 		{
 			memset(error_msg_buf, 0, ERROR_MSG_LENGTH);
-			snprintf(error_msg_buf, ERROR_MSG_LENGTH, "\"unexpected '[]' for '%s' or confising definition for '%s' before\"", var_name, var_name);
+			snprintf(error_msg_buf, ERROR_MSG_LENGTH, "\"unexpected '[]' for '%s' or confusing definition for '%s' before\"", var_name, var_name);
 			set_Msg_to_errInfo(err_infolist, LINENUM, ERR_DEFVAR_CONFUSING, error_msg_buf);
 			error_code |= ERR_DEFVAR_CONFUSING;
 		}
@@ -1606,7 +1606,7 @@ int scripts_checkout(const char *scripts)
 					if(regAddr_confdef_check(regAddr_info, atoi(regAddr)))
 					{
 						memset(error_msg_buf, 0, ERROR_MSG_LENGTH);
-						snprintf(error_msg_buf, ERROR_MSG_LENGTH, "\"'%s' has been used by others\"", regAddr);
+						snprintf(error_msg_buf, ERROR_MSG_LENGTH, "\"'%s' has been used before\"", regAddr);
 						set_Msg_to_errInfo(err_infolist, LINENUM, ERR_REG_OUTBOUNDS, error_msg_buf);
 						error_code |= ERR_REG_OUTBOUNDS;
 					}
@@ -1722,7 +1722,7 @@ int scripts_checkout(const char *scripts)
 					if(regAddr_confdef_check(regAddr_info, atoi(regAddr)))
 					{
 						memset(error_msg_buf, 0, ERROR_MSG_LENGTH);
-						snprintf(error_msg_buf, ERROR_MSG_LENGTH, "\"'%s' has been used by others\"", regAddr);
+						snprintf(error_msg_buf, ERROR_MSG_LENGTH, "\"'%s' has been used before\"", regAddr);
 						set_Msg_to_errInfo(err_infolist, LINENUM, ERR_REG_OUTBOUNDS, error_msg_buf);
 						error_code |= ERR_REG_OUTBOUNDS;
 					}
@@ -1801,7 +1801,7 @@ int scripts_checkout(const char *scripts)
 					if(regAddr_confdef_check(regAddr_info, atoi(regAddr)))
 					{
 						memset(error_msg_buf, 0, ERROR_MSG_LENGTH);
-						snprintf(error_msg_buf, ERROR_MSG_LENGTH, "\"'%s' has been used by others\"", regAddr);
+						snprintf(error_msg_buf, ERROR_MSG_LENGTH, "\"'%s' has been used before\"", regAddr);
 						set_Msg_to_errInfo(err_infolist, LINENUM, ERR_REG_OUTBOUNDS, error_msg_buf);
 						error_code |= ERR_REG_OUTBOUNDS;
 					}
