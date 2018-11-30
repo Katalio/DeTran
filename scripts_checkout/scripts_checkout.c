@@ -1886,10 +1886,7 @@ int scripts_checkout(const char *scripts)
 				else
 				{
 					//检查数组变量格式
-					if(strchr(var_name_b, '['))
-					{
-						error_code |= variable_format_checkout(params_definfo, cmds, var_name_b, err_infolist, LINENUM, error_msg_buf);
-					}
+					error_code |= variable_format_checkout(params_definfo, cmds, var_name_b, err_infolist, LINENUM, error_msg_buf);
 					//检查变量类型
 					if(strchr(thr_low, '.') || strchr(thr_up, '.'))
 					{
@@ -2091,10 +2088,7 @@ int scripts_checkout(const char *scripts)
 				else
 				{
 					//检查数组变量格式
-					if(strchr(var_name_b, '['))
-					{
-						error_code |= variable_format_checkout(params_definfo, cmds, var_name_b, err_infolist, LINENUM, error_msg_buf);
-					}
+					error_code |= variable_format_checkout(params_definfo, cmds, var_name_b, err_infolist, LINENUM, error_msg_buf);
 					if(var_count <= 0)
 					{
 						memset(error_msg_buf, 0, ERROR_MSG_LENGTH);
@@ -2123,7 +2117,7 @@ int scripts_checkout(const char *scripts)
 					if(strlen(modbus_cmd) != 13)
 					{
 						memset(error_msg_buf, 0, ERROR_MSG_LENGTH);
-						snprintf(error_msg_buf, ERROR_MSG_LENGTH, "\"length of modbus command for '%s' != 13\"", cmds);
+						snprintf(error_msg_buf, ERROR_MSG_LENGTH, "\"invalid modbus command for '%s'\"", cmds);
 						set_Msg_to_errInfo(err_infolist, LINENUM, ERR_FORMAT, error_msg_buf);
 						error_code |= ERR_FORMAT;	
 					}
@@ -2208,10 +2202,7 @@ int scripts_checkout(const char *scripts)
 				else 
 				{
 					//检查数组变量格式
-					if(strchr(var_name_b, '['))
-					{
-						error_code |= variable_format_checkout(params_definfo, cmds, var_name_b, err_infolist, LINENUM, error_msg_buf);
-					}
+					error_code |= variable_format_checkout(params_definfo, cmds, var_name_b, err_infolist, LINENUM, error_msg_buf);
 					if(var_count <= 0)
 					{
 						memset(error_msg_buf, 0, ERROR_MSG_LENGTH);
@@ -2259,10 +2250,7 @@ int scripts_checkout(const char *scripts)
 				else 
 				{
 					//检查数组变量格式
-					if(strchr(var_name_b, '['))
-					{
-						error_code |= variable_format_checkout(params_definfo, cmds, var_name_b, err_infolist, LINENUM, error_msg_buf);
-					}
+					error_code |= variable_format_checkout(params_definfo, cmds, var_name_b, err_infolist, LINENUM, error_msg_buf);
 					//检查变量类型是否是F
 					head = get_params_info(params_definfo, var_name);
 					if(strncmp(head->var_type, "F", 1) != 0)
@@ -2322,7 +2310,7 @@ int scripts_checkout(const char *scripts)
 				if(strlen(modbus_cmd) != 13)
 				{
 					memset(error_msg_buf, 0, ERROR_MSG_LENGTH);
-					snprintf(error_msg_buf, ERROR_MSG_LENGTH, "\"length of modbus command for '%s' != 13\"", cmds);
+					snprintf(error_msg_buf, ERROR_MSG_LENGTH, "\"invalid modbus command for '%s'\"", cmds);
 					set_Msg_to_errInfo(err_infolist, LINENUM, ERR_FORMAT, error_msg_buf);
 					error_code |= ERR_FORMAT;	
 				}
