@@ -15,6 +15,7 @@
 /* valid commands */
 const char *script_cmds[] =
 {
+	"SET_ADDR",
 	"VAR",	//定义单个变量
 	"VARS",	//定义数组变量
 	"INTF",	//定义单个变量，同时给定寄存器地址
@@ -45,6 +46,9 @@ const char *script_cmds[] =
 	"IF",	
 	"ELSE",
 	"ENDIF",
+	"ALARM",
+	"SET_AL",
+	"REL_AL",
 	"SLEEP",
 	"CONTINUE",
 	NULL
@@ -82,12 +86,14 @@ int _vstrsep(char *buf, const char *sep, ...)	//变参为char **型
 	va_start(ap, sep);
 	while((p = va_arg(ap, char **)) != NULL)
 	{
-loop:	k = strsep(&buf, sep);
+		do {
+	 		k = strsep(&buf, sep);
+			if(k == NULL)
+				break;
+		} while(strlen(k) == 0);
+
 		if(k == NULL || *k == '\n')
 			break;
-
-		if(strlen(k) == 0)
-			goto loop;
 
 		*p = k;
 		++ n;
@@ -100,41 +106,28 @@ loop:	k = strsep(&buf, sep);
 int scripts_getline(char *line, const char *scripts, int cur_index, int *LINENUM)
 {
 	int i = 0;
-	int linenum = *LINENUM;
+	int num = *LINENUM;
+	int ret;
 
 	//读取当前行
 	while((scripts[cur_index] != '\n') && (scripts[cur_index] != '\0') && (i < LINE_SIZE))
 	{
 		line[i ++] = scripts[cur_index ++];
 	}
-	if(i >= LINE_SIZE)
+	ret = i;
+	if(i < LINE_SIZE)
 	{
-		linenum ++;
-		*LINENUM = linenum;
-
-		return i;
+		if(scripts[cur_index] == '\n')
+		{
+			line[i] = scripts[cur_index];
+			ret = i + 1;
+		}
+		cur_index ++;	//cur_index++是为了指向'\n'的后一个字符，即下一行开头		
 	}
-
-	if(scripts[cur_index] == '\n')
-	{
-		line[i] = scripts[cur_index];
-
-		cur_index ++;	//cur_index++是为了指向'\n'的后一个字符，即下一行开头
-
-		linenum ++;	//指向下一行
-		*LINENUM = linenum;
-//		printf("line:%s, %d\n", line, i + 1);
-
-		return (i + 1);
-	}
-
-	cur_index ++;	//cur_index++是为了指向'\n'的后一个字符，即下一行开头
-
-	linenum ++;	//指向下一行
-	*LINENUM = linenum;
-//	printf("line:%s, %d\n", line, i);
-
-	return i;
+	num ++;	//指向下一行
+	*LINENUM = num;
+		
+	return ret;
 }
 
 int is_null_line(char *line)
@@ -1122,8 +1115,8 @@ int defvar_preversion_check(char (*cmd_info)[16], script_syntax_error_info *err_
 
 	while(strlen(*p) != 0)
 	{
-		if(strcmp(*p, "VAR") && strcmp(*p, "VARS") && strcmp(*p, "INTF") && strcmp(*p, "INTFS")\
-			&& strcmp(*p, "CTRL") && strcmp(*p, "CTRLS") && strcmp(*p, "UCTRL") && strcmp(*p, "UCTRLS"))
+		if(strcmp(*p, "SET_ADDR") && strcmp(*p, "VAR") && strcmp(*p, "VARS") && strcmp(*p, "INTF") && strcmp(*p, "INTFS")\
+			&& strcmp(*p, "ALARM") && strcmp(*p, "CTRL") && strcmp(*p, "CTRLS") && strcmp(*p, "UCTRL") && strcmp(*p, "UCTRLS"))
 		{
 			memset(error_msg_buf, 0, ERROR_MSG_LENGTH);
 			snprintf(error_msg_buf, ERROR_MSG_LENGTH, "\"variable defined after excuting\"");
@@ -1209,25 +1202,27 @@ int Numofstr(char *Mstr, char *substr)
 	int number = 0;
 	char *p, *q;	//字符串辅助指针
 
-	while(*Mstr != '\0')
+	p = Mstr;
+	while(*p != '\0')
 	{
-	    p = Mstr;
-	    q = substr;
+		q = substr;
+
+	    while((*p != *q) && (*p != '\0'))
+	        p ++;
 
 	    while((*p == *q) && (*p != '\0') && (*q != '\0'))
 	    {
 	        p ++;
 	        q ++;
 	    }
-	    if((*q == '\0') && (*p != '=')) 
+
+	    if((*q == '\0') && (*p != '=') && (*p != '&') && (*p != '|'))
 		{
 			number ++;       							
-			Mstr += strlen(substr);
 	    }
-		else
-		{
-	    	Mstr ++;
-		}
+
+		if((*p == '=') || (*p == '&') || (*p == '|'))
+			p ++;
 	}
 
 	return number;
@@ -1236,8 +1231,9 @@ int Numofstr(char *Mstr, char *substr)
 int brackets_exist_check(char *str)	//only for IF
 {
 	int brackets_count = 0, symbols_count = 0;
-	char *symbols_info[] = {"==", "!=", "<", "<=", ">", ">=", NULL};
+	char *symbols_info[] = {"==", "!=", "<", "<=", ">", ">=", "&&", "||", "&", "|", NULL};
 	char **p, *q;
+	int err_flag = -1;
 
 	p = symbols_info;
 	while(*p)
@@ -1257,14 +1253,23 @@ int brackets_exist_check(char *str)	//only for IF
 	}
 
 	if((brackets_count == 0) && (symbols_count == 0))
-		return 3;
-
-	if(brackets_count == symbols_count)
-		return 0;
-	else if(brackets_count < symbols_count) 
-		return 1;
-	else 
-		return 2;
+	{
+		err_flag = 1;
+	}
+	else if((brackets_count == 1) && (symbols_count == 1))
+	{
+		err_flag = 0;
+	}
+	else if((symbols_count == 2 * brackets_count - 1) || (symbols_count == 2 * brackets_count - 3))
+	{
+		err_flag = 0;
+	}
+	else
+	{
+		err_flag = 2;
+	}
+	
+	return (err_flag);
 }
 
 int existIFbefore_check(char (*cmd_info)[16], char *cmd)
@@ -1396,7 +1401,7 @@ int scripts_checkout(const char *scripts)
 	char cmds[16];			
 	int i, j, n, len;
 	char *p, *nv, *nvp, *cp, *cq;
-	char *cmd, *regAddr, *var_type, *var_name_b;
+	char *cmd, *regAddr, *var_type, *var_name_b, *alarm_name;
 	char var_name[16], tmp_name[16];
 	int var_count = 0;	//元素的个数，针对数组变量来说，单个变量为1
 	char *start_num, *read_count;	//读入寄存器的开始编号及个数
@@ -1485,7 +1490,30 @@ int scripts_checkout(const char *scripts)
 
 		nv = nvp = strdup(line);
 		memset(var_name, 0, 16);
-		if(!strcmp(cmds, "VAR") || !strcmp(cmds, "VARS"))
+		if(!strcmp(cmds, "SET_ADDR"))
+		{
+			char *slave;
+
+			n = vstrsep(nvp, "	; ", &cmd, &slave);
+			if(n == 2)
+			{
+				if(atoi(slave) <= 0)
+				{
+					memset(error_msg_buf, 0, ERROR_MSG_LENGTH);
+					snprintf(error_msg_buf, ERROR_MSG_LENGTH, "\"unknown slave address \"");
+					set_Msg_to_errInfo(err_infolist, LINENUM, ERR_INVALID_SLAVE, error_msg_buf);
+					error_code |= ERR_INVALID_SLAVE;
+				}
+			}
+			else
+			{
+				memset(error_msg_buf, 0, ERROR_MSG_LENGTH);
+				snprintf(error_msg_buf, ERROR_MSG_LENGTH, "\"too few elements for '%s'\"", cmds);
+				set_Msg_to_errInfo(err_infolist, LINENUM, ERR_FORMAT, error_msg_buf);
+				error_code |= ERR_FORMAT;
+			}
+		}
+		else if(!strcmp(cmds, "VAR") || !strcmp(cmds, "VARS"))
 		{
 			//检查是否指令开始执行后还存在变量定义的指令
 			error_code |= defvar_preversion_check(cmd_info, err_infolist, LINENUM, error_msg_buf);
@@ -1855,6 +1883,181 @@ int scripts_checkout(const char *scripts)
 				error_code |= ERR_FORMAT;	
 			}
 		}
+		else if(!strcmp(cmds, "ALARM"))
+		{
+			//检查是否指令开始执行后还存在变量定义的指令
+			error_code |= defvar_preversion_check(cmd_info, err_infolist, LINENUM, error_msg_buf);
+
+			n = vstrsep(nvp, "	; ", &cmd, &regAddr, &var_type, &var_name_b);
+			if(n == 4)
+			{
+				//检查地址是否越界
+				if(atoi(regAddr) > MAX_REGISTER_NUM)
+				{
+					memset(error_msg_buf, 0, ERROR_MSG_LENGTH);
+					snprintf(error_msg_buf, ERROR_MSG_LENGTH, "\"available registers can not beyond 65535\"");
+					set_Msg_to_errInfo(err_infolist, LINENUM, ERR_REG_OUTBOUNDS, error_msg_buf);
+
+					error_code |= ERR_REG_OUTBOUNDS;
+				}
+				else
+				{
+					//检查地址是否被其它变量占用
+					if(regAddr_confdef_check(regAddr_info, atoi(regAddr)))
+					{
+						memset(error_msg_buf, 0, ERROR_MSG_LENGTH);
+						snprintf(error_msg_buf, ERROR_MSG_LENGTH, "\"address '%s' has been used before\"", regAddr);
+						set_Msg_to_errInfo(err_infolist, LINENUM, ERR_REG_OUTBOUNDS, error_msg_buf);
+						error_code |= ERR_REG_OUTBOUNDS;
+					}
+				}
+				//检查变量类型是否合法
+				error_code |= vartype_check(var_type, err_infolist, LINENUM, error_msg_buf);
+
+				var_count = get_varname(var_name, var_name_b);
+				if(var_count <= 0)
+				{
+					memset(error_msg_buf, 0, ERROR_MSG_LENGTH);
+					snprintf(error_msg_buf, ERROR_MSG_LENGTH, "\"invalid initializer '%s'\"", var_name);
+					set_Msg_to_errInfo(err_infolist, LINENUM, ERR_PARAM_EXCESS, error_msg_buf);
+					error_code |= ERR_PARAM_EXCESS;
+				}
+				//获取变量名，检查是否重复定义
+				error_code |= params_confdef_check(params_definfo, var_name, var_type, var_count, err_infolist, LINENUM, error_msg_buf);
+
+				error_code |= cmds_format_checkout(line, var_name_b, err_infolist, LINENUM, error_msg_buf);
+
+				//检测所赋的值是否与变量类型相对应，只需检查浮点型即可	
+				error_code |= init_value_type_checkout(params_definfo, line, var_name, err_infolist, LINENUM, error_msg_buf);
+
+				if(strchr(var_name_b, '[') != NULL)
+				{
+					memset(error_msg_buf, 0, ERROR_MSG_LENGTH);
+					snprintf(error_msg_buf, ERROR_MSG_LENGTH, "\"unexpected '[]' for 'ALARM'\"");
+					set_Msg_to_errInfo(err_infolist, LINENUM, ERR_DEFVAR_CONFUSING, error_msg_buf);
+					error_code |= ERR_DEFVAR_CONFUSING;	
+				}
+			}
+			else
+			{
+				memset(error_msg_buf, 0, ERROR_MSG_LENGTH);
+				snprintf(error_msg_buf, ERROR_MSG_LENGTH, "\"too few elements for '%s'\"", cmds);
+				set_Msg_to_errInfo(err_infolist, LINENUM, ERR_FORMAT, error_msg_buf);
+				error_code |= ERR_FORMAT;	
+			}
+		}
+		else if(!strcmp(cmds, "SET_AL") || !strcmp(cmds, "REL_AL"))
+		{
+			int m, alarm_count;
+			int err_flag = 0;
+
+			memset(tmp_name, 0, 16);
+			n = vstrsep(nvp, "	;, ", &cmd, &alarm_name, &var_name_b);
+			if(n == 3)
+			{
+				//获取变量名
+				var_count = get_varname(var_name, var_name_b);
+				alarm_count = get_varname(tmp_name, alarm_name);
+				if(var_count <= 0)
+				{
+					memset(error_msg_buf, 0, ERROR_MSG_LENGTH);
+					snprintf(error_msg_buf, ERROR_MSG_LENGTH, "\"invalid element subscript for '%s'\"", var_name);
+					set_Msg_to_errInfo(err_infolist, LINENUM, ERR_PARAM_EXCESS, error_msg_buf);
+					error_code |= ERR_PARAM_EXCESS;
+				}
+				if(alarm_count <= 0)
+				{
+					memset(error_msg_buf, 0, ERROR_MSG_LENGTH);
+					snprintf(error_msg_buf, ERROR_MSG_LENGTH, "\"invalid element subscript for '%s'\"", tmp_name);
+					set_Msg_to_errInfo(err_infolist, LINENUM, ERR_PARAM_EXCESS, error_msg_buf);
+					error_code |= ERR_PARAM_EXCESS;
+				}
+				//检查变量是否定义
+				n = params_undefined_check(params_definfo, var_name, err_infolist, LINENUM, error_msg_buf);
+				m = params_undefined_check(params_definfo, tmp_name, err_infolist, LINENUM, error_msg_buf);
+				if(!n && !m)
+				{
+					//检查数组变量格式
+					error_code |= variable_format_checkout(params_definfo, cmds, var_name_b, err_infolist, LINENUM, error_msg_buf);
+					error_code |= variable_format_checkout(params_definfo, cmds, alarm_name, err_infolist, LINENUM, error_msg_buf);
+
+					head = get_params_info(params_definfo, var_name);
+					if(var_count > head->var_count)
+					{
+						memset(error_msg_buf, 0, ERROR_MSG_LENGTH);
+						snprintf(error_msg_buf, ERROR_MSG_LENGTH, "\"register beyond access for '%s'\"", var_name);
+						set_Msg_to_errInfo(err_infolist, LINENUM, ERR_REG_OUTBOUNDS, error_msg_buf);
+						error_code |= ERR_REG_OUTBOUNDS;
+					}
+					head = get_params_info(params_definfo, tmp_name);
+					if(alarm_count > head->var_count)
+					{
+						memset(error_msg_buf, 0, ERROR_MSG_LENGTH);
+						snprintf(error_msg_buf, ERROR_MSG_LENGTH, "\"register beyond access for '%s'\"", tmp_name);
+						set_Msg_to_errInfo(err_infolist, LINENUM, ERR_REG_OUTBOUNDS, error_msg_buf);
+						error_code |= ERR_REG_OUTBOUNDS;
+					}
+					char timing[8] = {0};
+
+					p = strstr(line, var_name_b);
+					p += strlen(var_name_b);
+
+					while(isspace((int) *p) || *p == ',' && *p != '\0')
+						p ++;
+
+					i = 0;
+					while(*p != ';' && *p != '\n' && *p != '\0')
+					{
+						timing[i ++] = *(p ++);	
+					}
+					if(strlen(timing) == 0)
+					{
+						p --; //Now the pointer 'p' is pointing ';'
+						while(isspace((int) *p)) p --;
+						if(*p == ',')
+						{
+							memset(error_msg_buf, 0, ERROR_MSG_LENGTH);
+							snprintf(error_msg_buf, ERROR_MSG_LENGTH, "\"unexpected ',' before ';'\"");
+							set_Msg_to_errInfo(err_infolist, LINENUM, ERR_FORMAT, error_msg_buf);
+							error_code |= ERR_FORMAT;	
+						}
+					}
+					else
+					{
+						if(atoi(timing) < 0)
+						{
+							err_flag = 1;
+						}
+						for(i = 0; i < strlen(timing); i++)
+						{
+							if((timing[i] < '0' || timing[i] > '9') && !isspace((int) *(timing + i)))
+							{
+								err_flag = 1;
+							}
+						}
+						if(err_flag)
+						{
+							memset(error_msg_buf, 0, ERROR_MSG_LENGTH);
+							snprintf(error_msg_buf, ERROR_MSG_LENGTH, "\"invalid value for timing\"");
+							set_Msg_to_errInfo(err_infolist, LINENUM, ERR_FORMAT, error_msg_buf);
+							error_code |= ERR_FORMAT;
+						}
+					}
+				}
+				else
+				{
+					error_code |= n;
+					error_code |= m;
+				}
+			}
+			else
+			{
+				memset(error_msg_buf, 0, ERROR_MSG_LENGTH);
+				snprintf(error_msg_buf, ERROR_MSG_LENGTH, "\"too few elements for '%s'\"", cmds);
+				set_Msg_to_errInfo(err_infolist, LINENUM, ERR_FORMAT, error_msg_buf);
+				error_code |= ERR_FORMAT;	
+			}
+		}
 		else if(!strcmp(cmds, "SET_THV"))
 		{
 			char *thr_up, *thr_low;
@@ -1919,6 +2122,9 @@ int scripts_checkout(const char *scripts)
 		}
 		else if(!strcmp(cmds, "CAL"))
 		{
+			int f = 0;
+			char retvar_name[16];
+			char retvar_type[2];
 			i = 0;	//统计变量个数
 			if(cal_format_check(line, err_infolist, LINENUM, error_msg_buf))
 			{
@@ -1996,12 +2202,23 @@ int scripts_checkout(const char *scripts)
 									set_Msg_to_errInfo(err_infolist, LINENUM, ERR_PARAM_EXCESS, error_msg_buf);
 									error_code |= ERR_PARAM_EXCESS;
 								}
-								if(i == 1)	//结果变量必须是浮点型
+								if(i == 1)
 								{
-									if(strncmp(head->var_type, "F", 1) != 0)
+									if(strncmp(head->var_type, "B", 1) == 0)	//结果变量是单字节
+									{
+										f = 1;
+										memset(retvar_name, 0, 16);
+										memset(retvar_type, 0, 2);
+										strcpy(retvar_name, head->var_name);
+										strncpy(retvar_type, head->var_type, 1);
+									}
+								}
+								if(f && (i != 1))
+								{
+									if(strncmp(head->var_type, retvar_type, 1) != 0)
 									{
 										memset(error_msg_buf, 0, ERROR_MSG_LENGTH);
-										snprintf(error_msg_buf, ERROR_MSG_LENGTH, "\"type of '%s' must be 'F'\"", var_name);
+										snprintf(error_msg_buf, ERROR_MSG_LENGTH, "\"type of '%s' don't match that of '%s'\"", var_name, retvar_name);
 										set_Msg_to_errInfo(err_infolist, LINENUM, ERR_VARTYPE_CONFUSING, error_msg_buf);
 										error_code |= ERR_VARTYPE_CONFUSING;	
 									}
@@ -2345,26 +2562,19 @@ int scripts_checkout(const char *scripts)
 			}
 
 			n = brackets_exist_check(line);
-			if(n == 1)	//only for IF
-			{
-				memset(error_msg_buf, 0, ERROR_MSG_LENGTH);
-				snprintf(error_msg_buf, ERROR_MSG_LENGTH, "\"each condition need parentheses\"");
-				set_Msg_to_errInfo(err_infolist, LINENUM, ERR_FORMAT, error_msg_buf);
-				error_code |= ERR_FORMAT;	
-			}
-			else if(n == 2)	//only for IF
-			{
-				memset(error_msg_buf, 0, ERROR_MSG_LENGTH);
-				snprintf(error_msg_buf, ERROR_MSG_LENGTH, "\"expected condition or valid operator for 'IF'\"");
-				set_Msg_to_errInfo(err_infolist, LINENUM, ERR_FORMAT, error_msg_buf);
-				error_code |= ERR_FORMAT;	
-			}
-			else if(n == 3)	//only for IF
+			if(n == 1)	//nothing behind of IF
 			{
 				memset(error_msg_buf, 0, ERROR_MSG_LENGTH);
 				snprintf(error_msg_buf, ERROR_MSG_LENGTH, "\"invalid format for 'IF'\"");
 				set_Msg_to_errInfo(err_infolist, LINENUM, ERR_FORMAT, error_msg_buf);
-				error_code |= ERR_FORMAT;
+				error_code |= ERR_FORMAT;	
+			}
+			else if(n == 2)
+			{
+				memset(error_msg_buf, 0, ERROR_MSG_LENGTH);
+				snprintf(error_msg_buf, ERROR_MSG_LENGTH, "\"brackets and conditions are unmatched\"");
+				set_Msg_to_errInfo(err_infolist, LINENUM, ERR_FORMAT, error_msg_buf);
+				error_code |= ERR_FORMAT;	
 			}
 			else
 			{
@@ -2488,6 +2698,7 @@ int main()
 {
 	int error_code = 0;
 #if 1
+	/*
 	char *scripts =	"VARS W AI[12];\n"\
 					"VARS B DI[4]={2,3,5,8};\n"\
 					"VAR F tmp;\n"\
@@ -2499,6 +2710,7 @@ int main()
 					"VARS F UDI01[17] = {1, -2.4};\n"\
 					"VARS F UAI02[17];\n"\
 					"INTF 1004 F wspdx = 5.7;\n"\
+					"INTFS 1000 B DIV[16];\n"\
 					"INTFS 2018 F wsdu[2];\n"\
 					"INTFS 2019 F AIV[2];\n"\
 					"CTRL 4000 B LDO1;\n"\
@@ -2511,6 +2723,7 @@ int main()
 					"ELSE\n"\
 					"ENDIF\n"\
 					"SET_THV tmp -20 30;\n"\
+					"CAL DIV[1] = DI[1] + 2;\n"\
 					"CAL tmp = AI[1] / 4096 * -3.3 / 165 * 1000 - 4;\n"\
 					"CAL wsdu[1] = tmp * 100 / 16 + 0.0;\n"\
 					"CAL tmp = AI[2] / 4096 * 3.3 / 165 * 1000 - 4;\n"\
@@ -2530,6 +2743,170 @@ int main()
 					"DO_CTRL;\n"\
 					"CONTINUE;\n"\
 					"SLEEP 1000;";
+	*/
+	char *scripts =	"SET_ADDR 1;\n"\
+					"INTFS 5025 B ARV[16];\n"\
+					"INTFS 5000 F ART[12];\n"\
+					"INTFS 5060 F WS[2];\n"\
+					"ALARM 5100 F V_AP1;\n"\
+					"ALARM 5102 F V_AP2;\n"\
+					"ALARM 5104 F V_AP3;\n"\
+					"ALARM 5106 F V_AP4;\n"\
+					"ALARM 5108 F V_AP5;\n"\
+					"ALARM 5110 F V_AP6;\n"\
+					"ALARM 5112 B V_AP7;\n"\
+					"VARS W RGC[12]={16,16,16,16,16,16,16,0,0,0,0,0};\n"\
+					"VARS W RGR[12]={25,25,5,25,0,0,0,0,0,0,0,0};\n"\
+					"VARS W AI[12];\n"\
+					"VARS B DI[16];\n"\
+					"VARS W WSTMP[2];\n"\
+					"VARS F TMP[12];\n"\
+					"IN_A 1,12;\n"\
+					"IN_D 1,16;\n"\
+					"IN_UA_B WSTMP[1],2,030300020002A,100;\n"\
+					"CAL WS[1] = WSTMP[1] / 10;\n"\
+					"CAL WS[2] = WSTMP[2] / 10;\n"\
+					"CAL TMP[1] = AI[1] / 4096 * 3.3 / 165 * 1000 - 4;\n"\
+					"CAL TMP[2] = AI[2] / 4096 * 3.3 / 165 * 1000 - 4;\n"\
+					"CAL TMP[3] = AI[3] / 4096 * 3.3 / 165 * 1000 - 4;\n"\
+					"CAL TMP[4] = AI[4] / 4096 * 3.3 / 165 * 1000 - 4;\n"\
+					"CAL TMP[5] = AI[5] / 4096 * 3.3 / 165 * 1000 - 4;\n"\
+					"CAL TMP[6] = AI[6] / 4096 * 3.3 / 165 * 1000 - 4;\n"\
+					"CAL TMP[7] = AI[7] / 4096 * 3.3 / 165 * 1000 - 4;\n"\
+					"CAL TMP[8] = AI[8] / 4096 * 3.3 / 165 * 1000 - 4;\n"\
+					"CAL TMP[9] = AI[9] / 4096 * 3.3 / 165 * 1000 - 4;\n"\
+					"CAL TMP[10] = AI[10] / 4096 * 3.3 / 165 * 1000 - 4;\n"\
+					"CAL TMP[11] = AI[11] / 4096 * 3.3 / 165 * 1000 - 4;\n"\
+					"CAL TMP[12] = AI[12] / 4096 * 3.3 / 165 * 1000 - 4;\n"\
+					"CAL ART[1] = TMP[1] / RGC[1] * RGR[1] / 10;\n"\
+					"CAL ART[2] = TMP[2] / RGC[2] * RGR[2] / 10;\n"\
+					"CAL ART[3] = TMP[3] / RGC[3] * RGR[3];\n"\
+					"CAL ART[4] = TMP[4] / RGC[4] * RGR[4] / 10;\n"\
+					"CAL ART[5] = TMP[5] / RGC[5] * RGR[5];\n"\
+					"CAL ART[6] = TMP[6] / RGC[6] * RGR[6];\n"\
+					"CAL ART[7] = TMP[7] / RGC[7] * RGR[7];\n"\
+					"CAL ART[8] = TMP[8] / RGC[8] * RGR[8];\n"\
+					"CAL ART[9] = TMP[9] / RGC[9] * RGR[9];\n"\
+					"CAL ART[10] = TMP[10] / RGC[10] * RGR[10];\n"\
+					"CAL ART[11] = TMP[11] / RGC[11] * RGR[11];\n"\
+					"CAL ART[12] = TMP[12] / RGC[12] * RGR[12];\n"\
+					"IF(ART[1]>1.6) || (ART[1]<1)\n"\
+					"	       SET_AL V_AP1,ART[1],10;\n"\
+					"ELSE\n"\
+					"	       REL_AL V_AP1,ART[1];\n"\
+					"ENDIF\n"\
+					"IF(ART[2]>1.6) || (ART[2]<1)\n"\
+					"	       SET_AL V_AP2,ART[2],10;\n"\
+					"ELSE\n"\
+					"	       REL_AL V_AP2,ART[2];\n"\
+					"ENDIF\n"\
+					"IF(ART[3]>2.8) || (ART[3]<1.8)\n"\
+					"	       SET_AL V_AP3,ART[3],10;\n"\
+					"ELSE\n"\
+					"	       REL_AL V_AP3,ART[3];\n"\
+					"ENDIF\n"\
+					"IF(ART[4]>1.4) || (ART[4]<0.8)\n"\
+					"	       SET_AL V_AP4,ART[4],10;\n"\
+					"ELSE\n"\
+					"	       REL_AL V_AP4,ART[4];\n"\
+					"ENDIF\n"\
+					"IF(WS[1]>38) || (WS[1]<18)\n"\
+					"	       SET_AL V_AP5,WS[1],10;\n"\
+					"ELSE\n"\
+					"	       REL_AL V_AP5,WS[1];\n"\
+					"ENDIF\n"\
+					"IF(WS[2]>80) || (WS[2]<30)\n"\
+					"	       SET_AL V_AP6,WS[2],10;\n"\
+					"ELSE\n"\
+					"	       REL_AL V_AP6,WS[2];\n"\
+					"ENDIF\n"\
+					"IF (ARV[1] == 0)\n"\
+					"	CAL ARV[1] = DI[1] + 0;\n"\
+					"	SET_AL V_AP7,ARV[1], 10;\n"\
+					"ELSE\n"\
+					"	CAL ARV[1] = DI[1] + 0;\n"\
+					"	REL_AL V_AP7,ARV[1], 10;\n"\
+					"ENDIF\n"\
+					"SLEEP 2000;\n";
+	/*
+	char *scripts =	"SET_ADDR 1;\n"\
+					"INTFS 4050 B YM[32];\n"\
+					"INTFS 4000 F DB[10];\n"\
+					"INTFS 5000 F DW[10];\n"\
+					"VARS W TMP[22];\n"\
+					"VARS W TMU[2];\n"\
+					"VARS W TMQ[19];\n"\
+					"VARS U TMY[2];\n"\
+					"VARS U TMV[9];\n"\
+					"IN_UD_B YM[1],32,010200000020A,100;\n"\
+					"IN_UA_B TMP[1],6,03039C400006A,100;\n"\
+					"IN_UA_B TMP[7],6,03039C530006A,100;\n"\
+					"IN_UA_B TMP[13],2,03039C770002A,100;\n"\
+					"IN_UA_B TMP[15],2,03039C7F0002A,100;\n"\
+					"IN_UA_B TMP[17],2,03039C8A0002A,100;\n"\
+					"IN_UA_B TMP[19],1,03039C8C0001A,100;\n"\
+					"IN_UA_B TMP[20],2,03039CA20002A,200;\n"\
+					"IN_UA_B TMP[22],1,03039CA40001A,100;\n"\
+					"IN_UA_B TMQ[1],14,0203016E000EA,100;\n"\
+					"IN_UA_B TMQ[15],2,020301820002A,100;\n"\
+					"IN_UA_B TMQ[17],2,0203018A0002A,100;\n"\
+					"IN_UA_B TMQ[19],1,020301920001A,100;\n"\
+					"CAL DB[1] = TMP[2] << 16 | TMP[1];\n"\
+					"CAL DB[2] = TMP[4] << 16 | TMP[3];\n"\
+					"CAL DB[3] = TMP[6] << 16 | TMP[5];\n"\
+					"CAL DB[4] = TMP[8] << 16 | TMP[7];\n"\
+					"CAL DB[5] = TMP[10] << 16 | TMP[9];\n"\
+					"CAL DB[6] = TMP[12] << 16 | TMP[11];\n"\
+					"CAL DB[7] = TMP[14] << 16 | TMP[13];\n"\
+					"CAL DB[8] = TMP[16] << 16 | TMP[15];\n"\
+					"CAL TMU[1] = TMP[18] << 16 | TMP[17];\n"\
+					"CAL TMU[2] = TMP[21] << 16 | TMP[20];\n"\
+					"CAL TMY[1] = TMU[1] << 16 | TMP[19];\n"\
+					"CAL TMY[2] = TMU[2] << 16 | TMP[22];\n"\
+					"CAL TMV[1] = TMQ[1] << 16 | TMQ[2];\n"\
+					"CAL TMV[2] = TMQ[3] << 16 | TMQ[4];\n"\
+					"CAL TMV[3] = TMQ[5] << 16 | TMQ[6];\n"\
+					"CAL TMV[4] = TMQ[7] << 16 | TMQ[8];\n"\
+					"CAL TMV[5] = TMQ[9] << 16 | TMQ[10];\n"\
+					"CAL TMV[6] = TMQ[11] << 16 | TMQ[12];\n"\
+					"CAL TMV[7] = TMQ[13] << 16 | TMQ[14];\n"\
+					"CAL TMV[8] = TMQ[15] << 16 | TMQ[16];\n"\
+					"CAL TMV[9] = TMQ[17] << 16 | TMQ[18];\n"\
+					"CAL DB[9] = TMY[1] * 0.0001;\n"\
+					"CAL DB[10] = TMY[2] * 0.0001;\n"\
+					"CAL DW[1] = TMV[1] * 0.0001;\n"\
+					"CAL DW[2] = TMV[2] * 0.0001;\n"\
+					"CAL DW[3] = TMV[3] * 0.0001;\n"\
+					"CAL DW[4] = TMV[4] * 0.0001;\n"\
+					"CAL DW[5] = TMV[5] * 0.0001;\n"\
+					"CAL DW[6] = TMV[6] * 0.0001;\n"\
+					"CAL DW[9] = TMV[9] * 0.0001;\n"\
+					"IF (TMV[7] & 80000000H) || (TMV[7] | 80000000H) && (TMV[7] & 80000000H) && (TMV[7] | 80000000H)\n"\
+					"	CAL TMV[7] = TMV[7] & 7FFFFFFFH;\n"\
+					"CAL DW[7] = 0 - 1 * TMV[7] * 0.0001;\n"\
+					"ELSE\n"\
+					"	CAL DW[7] = TMV[7] * 0.0001;\n"\
+					"ENDIF\n"\
+					"IF (TMV[7] & 80000000H) || (TMV[7] | 80000000H) && (TMV[7] & 80000000H)\n"\
+					"	CAL TMV[7] = TMV[7] & 7FFFFFFFH;\n"\
+					"CAL DW[7] = 0 - 1 * TMV[7] * 0.0001;\n"\
+					"ELSE\n"\
+					"	CAL DW[7] = TMV[7] * 0.0001;\n"\
+					"ENDIF\n"\
+					"IF (TMV[8] & 80000000H) || (TMV[7] & 80000000H)\n"\
+					"	CAL TMV[8] = TMV[8] & 7FFFFFFFH;\n"\
+					"CAL DW[8] = 0 - 1 * TMV[8] * 0.0001;\n"\
+					"ELSE\n"\
+					"	CAL DW[8] = TMV[8] * 0.0001;\n"\
+					"ENDIF\n"\
+					"IF (TMQ[19] & 80000000H)\n"\
+					"	CAL TMQ[19] = TMQ[19] & 7FFFFFFFH;\n"\
+					"CAL DW[10] = 0 - 1 * TMQ[19] * 0.001;\n"\
+					"ELSE\n"\
+					"	CAL DW[10] = TMQ[19] * 0.001;\n"\
+					"ENDIF\n"\
+					"SLEEP 2000;\n";
+	*/
 #else
 	char *scripts = NULL;
 #endif

@@ -1167,25 +1167,27 @@ int Numofstr(char *Mstr, char *substr)
 	int number = 0;
 	char *p, *q;	//字符串辅助指针
 
-	while(*Mstr != '\0')
+	p = Mstr;
+	while(*p != '\0')
 	{
-	    p = Mstr;
-	    q = substr;
+		q = substr;
+
+	    while((*p != *q) && (*p != '\0'))
+	        p ++;
 
 	    while((*p == *q) && (*p != '\0') && (*q != '\0'))
 	    {
 	        p ++;
 	        q ++;
 	    }
-	    if((*q == '\0') && (*p != '=')) 
+
+	    if((*q == '\0') && (*p != '=') && (*p != '&') && (*p != '|'))
 		{
 			number ++;       							
-			Mstr += strlen(substr);
 	    }
-		else
-		{
-	    	Mstr ++;
-		}
+
+		if((*p == '=') || (*p == '&') || (*p == '|'))
+			p ++;
 	}
 
 	return number;
@@ -1194,8 +1196,9 @@ int Numofstr(char *Mstr, char *substr)
 int brackets_exist_check(char *str)	//only for IF
 {
 	int brackets_count = 0, symbols_count = 0;
-	char *symbols_info[] = {"==", "!=", "<", "<=", ">", ">=", NULL};
+	char *symbols_info[] = {"==", "!=", "<", "<=", ">", ">=", "&&", "||", "&", "|", NULL};
 	char **p, *q;
+	int err_flag = -1;
 
 	p = symbols_info;
 	while(*p)
@@ -1215,14 +1218,23 @@ int brackets_exist_check(char *str)	//only for IF
 	}
 
 	if((brackets_count == 0) && (symbols_count == 0))
-		return 3;
-
-	if(brackets_count == symbols_count)
-		return 0;
-	else if(brackets_count < symbols_count) 
-		return 1;
-	else 
-		return 2;
+	{
+		err_flag = 1;
+	}
+	else if((brackets_count == 1) && (symbols_count == 1))
+	{
+		err_flag = 0;
+	}
+	else if((symbols_count == 2 * brackets_count - 1) || (symbols_count == 2 * brackets_count - 3))
+	{
+		err_flag = 0;
+	}
+	else
+	{
+		err_flag = 2;
+	}
+	
+	return (err_flag);
 }
 
 int existIFbefore_check(char (*cmd_info)[16], char *cmd)
@@ -1874,6 +1886,7 @@ int scripts_checkout(const char *scripts, script_syntax_error_info *err_infolist
 		else if(!strcmp(cmds, "SET_AL") || !strcmp(cmds, "REL_AL"))
 		{
 			int m, alarm_count;
+			int err_flag = 0;
 
 			memset(tmp_name, 0, 16);
 			n = vstrsep(nvp, "	;, ", &cmd, &alarm_name, &var_name_b);
@@ -1930,30 +1943,36 @@ int scripts_checkout(const char *scripts, script_syntax_error_info *err_infolist
 						p ++;
 
 					i = 0;
-					while(!isspace((int) *p) && *p != ';' && *p != '\n' && *p != '\0')
+					while(*p != ';' && *p != '\n' && *p != '\0')
 					{
 						timing[i ++] = *(p ++);	
 					}
 					if(strlen(timing) == 0)
 					{
-						if(!strcmp(cmds, "SET_AL"))
+						p --; //Now the pointer 'p' is pointing ';'
+						while(isspace((int) *p)) p --;
+						if(*p == ',')
 						{
 							memset(error_msg_buf, 0, ERROR_MSG_LENGTH);
-							snprintf(error_msg_buf, ERROR_MSG_LENGTH, "\"too few elements for '%s'\"", cmds);
+							snprintf(error_msg_buf, ERROR_MSG_LENGTH, "\"unexpected ',' before ';'\"");
 							set_Msg_to_errInfo(err_infolist, linenum, ERR_FORMAT, error_msg_buf);
 							error_code |= ERR_FORMAT;	
 						}
 					}
 					else
 					{
-						if(!strcmp(cmds, "REL_AL"))
+						if(atoi(timing) < 0)
 						{
-							memset(error_msg_buf, 0, ERROR_MSG_LENGTH);
-							snprintf(error_msg_buf, ERROR_MSG_LENGTH, "\"too more elements for '%s'\"", cmds);
-							set_Msg_to_errInfo(err_infolist, linenum, ERR_FORMAT, error_msg_buf);
-							error_code |= ERR_FORMAT;
+							err_flag = 1;
 						}
-						else if(atoi(timing) <= 0)
+						for(i = 0; i < strlen(timing); i++)
+						{
+							if((timing[i] < '0' || timing[i] > '9') && !isspace((int) *(timing + i)))
+							{
+								err_flag = 1;
+							}
+						}
+						if(err_flag)
 						{
 							memset(error_msg_buf, 0, ERROR_MSG_LENGTH);
 							snprintf(error_msg_buf, ERROR_MSG_LENGTH, "\"invalid value for timing\"");
@@ -2040,6 +2059,9 @@ int scripts_checkout(const char *scripts, script_syntax_error_info *err_infolist
 		}
 		else if(!strcmp(cmds, "CAL"))
 		{
+			int f = 0;
+			char retvar_name[16];
+			char retvar_type[2];
 			i = 0;	//统计变量个数
 			if(cal_format_check(line, err_infolist, linenum, error_msg_buf))
 			{
@@ -2117,12 +2139,23 @@ int scripts_checkout(const char *scripts, script_syntax_error_info *err_infolist
 									set_Msg_to_errInfo(err_infolist, linenum, ERR_PARAM_EXCESS, error_msg_buf);
 									error_code |= ERR_PARAM_EXCESS;
 								}
-								if(i == 1)	//结果变量必须是浮点型
+								if(i == 1)
 								{
-									if(strncmp(head->var_type, "F", 1) != 0)
+									if(strncmp(head->var_type, "B", 1) == 0)	//结果变量是单字节
+									{
+										f = 1;
+										memset(retvar_name, 0, 16);
+										memset(retvar_type, 0, 2);
+										strcpy(retvar_name, head->var_name);
+										strncpy(retvar_type, head->var_type, 1);
+									}
+								}
+								if(f && (i != 1))
+								{
+									if(strncmp(head->var_type, retvar_type, 1) != 0)
 									{
 										memset(error_msg_buf, 0, ERROR_MSG_LENGTH);
-										snprintf(error_msg_buf, ERROR_MSG_LENGTH, "\"type of '%s' must be 'F'\"", var_name);
+										snprintf(error_msg_buf, ERROR_MSG_LENGTH, "\"type of '%s' don't match that of '%s'\"", var_name, retvar_name);
 										set_Msg_to_errInfo(err_infolist, linenum, ERR_VARTYPE_CONFUSING, error_msg_buf);
 										error_code |= ERR_VARTYPE_CONFUSING;	
 									}
@@ -2466,24 +2499,17 @@ int scripts_checkout(const char *scripts, script_syntax_error_info *err_infolist
 			}
 
 			n = brackets_exist_check(line);
-			if(n == 1)	//only for IF
-			{
-				memset(error_msg_buf, 0, ERROR_MSG_LENGTH);
-				snprintf(error_msg_buf, ERROR_MSG_LENGTH, "\"each condition need parentheses\"");
-				set_Msg_to_errInfo(err_infolist, linenum, ERR_FORMAT, error_msg_buf);
-				error_code |= ERR_FORMAT;	
-			}
-			else if(n == 2)	//only for IF
-			{
-				memset(error_msg_buf, 0, ERROR_MSG_LENGTH);
-				snprintf(error_msg_buf, ERROR_MSG_LENGTH, "\"expected condition or valid operator for 'IF'\"");
-				set_Msg_to_errInfo(err_infolist, linenum, ERR_FORMAT, error_msg_buf);
-				error_code |= ERR_FORMAT;	
-			}
-			else if(n == 3)	//only for IF
+			if(n == 1)	//nothing behind of IF
 			{
 				memset(error_msg_buf, 0, ERROR_MSG_LENGTH);
 				snprintf(error_msg_buf, ERROR_MSG_LENGTH, "\"invalid format for 'IF'\"");
+				set_Msg_to_errInfo(err_infolist, linenum, ERR_FORMAT, error_msg_buf);
+				error_code |= ERR_FORMAT;	
+			}
+			else if(n == 2)
+			{
+				memset(error_msg_buf, 0, ERROR_MSG_LENGTH);
+				snprintf(error_msg_buf, ERROR_MSG_LENGTH, "\"brackets and conditions are unmatched\"");
 				set_Msg_to_errInfo(err_infolist, linenum, ERR_FORMAT, error_msg_buf);
 				error_code |= ERR_FORMAT;
 			}

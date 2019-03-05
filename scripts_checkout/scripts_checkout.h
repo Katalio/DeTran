@@ -36,7 +36,8 @@ typedef enum
 	ERR_SERIAL_RDREG = (1 << 12),	//v20指令和modbus指令读取的寄存器个数不匹配
 	ERR_IFCMD_EXCESS = (1 << 13),	//只针对IF语句，IF嵌套超过3个
 	ERR_IFCMD_NO_MATCH = (1 << 14),	//指令不匹配，针对IF ENDIF组合
-	ERR_NO_CTRL_OUTPUT = (1 << 15)
+	ERR_NO_CTRL_OUTPUT = (1 << 15),
+	ERR_INVALID_SLAVE = (1 << 16)
 } script_syntax_error_code;
 
 typedef struct
